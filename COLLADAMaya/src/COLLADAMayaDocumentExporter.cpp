@@ -41,10 +41,23 @@
 #include <maya/MFileIO.h>
 #include <maya/MFnAttribute.h>
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_MATERIAL_EXT_ATTR
+#include <maya/MFnEnumAttribute.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnNumericAttribute.h>
+#define DAEFC_DYNAMIC_ATTRIBUTES_ELEMENT "dynamic_attributes"
+#endif//AD_IGNORE_MODIFY
+
 
 namespace COLLADAMaya
 {
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_MATERIAL_EXT_ATTR
+    static String s_strDynAttrName;
+#endif//AD_IGNORE_MODIFY
+    
     //---------------------------------------------------------------
     DocumentExporter::DocumentExporter ( const NativeString& fileName )
         : mStreamWriter ( fileName, ExportOptions::doublePrecision () )
@@ -69,6 +82,10 @@ namespace COLLADAMaya
         {
             mDigitTolerance = DOUBLE_TOLERANCE;
         }
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_MATERIAL_EXT_ATTR
+        s_strDynAttrName = DAEFC_DYNAMIC_ATTRIBUTES_ELEMENT;
+#endif//AD_IGNORE_MODIFY
     }
 
     //---------------------------------------------------------------
@@ -470,6 +487,292 @@ namespace COLLADAMaya
         return getSceneGraph ()->getExportSelectedOnly ();
     }
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_MATERIAL_EXT_ATTR
+
+    // --------------------------------------
+    void DocumentExporter::exportExtraData ( 
+        const MObject& node, 
+        COLLADASW::BaseExtraTechnique* baseExtraTechnique /*= 0*/ )
+    {
+        MStatus status;
+        MFnDependencyNode dependencyNode ( node, &status );
+        if ( status != MStatus::kSuccess )
+        {
+            return;
+        }
+        
+        uint uiAttributeCount = dependencyNode.attributeCount();
+        
+        // Flag, if the extra source was opened.
+         bool closeExtraSource = false;
+        COLLADASW::Extra extraSource ( &mStreamWriter );
+
+        // Create the extra attribute.
+        COLLADASW::Technique techniqueSource ( &mStreamWriter );
+        
+        for ( uint i=0; i< uiAttributeCount; ++i )
+        {
+            MObject attr = dependencyNode.attribute( i );
+            MFnAttribute attrFn(attr);
+            
+            // Skip some known dynamic attributes
+            if (attrFn.name() == "collada") continue; // Used by the DaeDocNode to link entities with the FCollada objects
+            if (attrFn.parent() != MObject::kNullObj) continue;
+            if (!attrFn.isDynamic() || !attrFn.isStorable() || !attrFn.isReadable() || !attrFn.isWritable()) continue;
+
+            // Well-known dynamic attributes that we don't want to export.
+            if (node.hasFn(MFn::kTransform))
+            {
+                if (attrFn.name() == "lockInfluenceWeights") continue; // used in all joints.
+            }
+
+            // Retrieve this attribute's value
+            bool wantNetworkedPlug = true;
+            MPlug plug = dependencyNode.findPlug(attrFn.object(), wantNetworkedPlug, &status);
+            MString name = plug.name();
+            if ( status != MStatus::kSuccess )
+            {
+                continue;
+            }
+            
+            // Get the collada attribute.
+            String pathAttributeName = attrFn.name().asChar ();
+
+            if ( exportExtraData ( plug, pathAttributeName, &techniqueSource, extraSource, closeExtraSource, baseExtraTechnique ) )
+                closeExtraSource = true;
+        }
+
+         // Close the extra source tag, if it is open.
+        if ( closeExtraSource )
+        {
+            if( baseExtraTechnique == NULL )
+            {
+                techniqueSource.closeChildElement( s_strDynAttrName );
+                extraSource.closeExtra();
+                techniqueSource.closeTechnique();
+            }
+        }
+     }
+ 
+     // --------------------------------------
+    bool DocumentExporter::exportExtraData ( 
+        const MPlug& plug, 
+        const String& parentAttributeName, 
+        COLLADASW::Technique* techniqueSource, 
+        COLLADASW::Extra& extraSource, 
+        bool openedExtraSource,
+        COLLADASW::BaseExtraTechnique* baseExtraTechnique /*= 0*/ )
+    {
+        MStatus status;
+
+        // Get the profile name of the child attribute.
+        //size_t numExtraChildren = plug.numChildren ();
+        //for ( uint i=0; i<numExtraChildren; ++i )
+        {
+            // Get the extra plug.
+            //MPlug extraPlug = plug.child ( i, &status );
+            MPlug extraPlug = plug;
+            if ( status != MStatus::kSuccess ) return false;
+            MFnAttribute extraAttribute ( extraPlug.attribute() );
+ 
+            // Check if we have an extra tag of an physical index element (primitive element, 
+            // surface, sampler2d or texture). In this case, the current attribute is a compound
+            // attribute and holds for every index a child element.
+            if ( extraPlug.isCompound () )
+            {
+#if 1            
+                MObject attributeNode(extraPlug.attribute());
+                MStatus status;
+                MFnDependencyNode dependencyNode ( attributeNode, &status );
+                if ( status != MStatus::kSuccess )
+                {
+                    return openedExtraSource;
+                }
+                uint uiAttributeCount = dependencyNode.attributeCount();
+                    for ( uint i=0; i< uiAttributeCount; ++i )
+                {
+                    MObject childAttribute = dependencyNode.attribute( i );
+                    MFnAttribute childAttrFn(childAttribute);
+                
+                    bool wantNetworkedPlug = true;
+                    MPlug childPlug = dependencyNode.findPlug(childAttrFn.object(), wantNetworkedPlug, &status);
+                    
+                    String childAttributeName = childAttrFn.name().asChar ();
+                    
+                    if ( exportExtraData ( childPlug, childAttributeName, techniqueSource, extraSource, openedExtraSource, baseExtraTechnique ) )
+                    {
+                        openedExtraSource = true;
+                    }
+                }
+                return openedExtraSource;
+#else
+                // TODO Recursive call for the child plugs.
+                MString name = extraAttribute.name ();
+                if( name.length() == 0 ) return false;
+                String attributeName = name.asUTF8 ();
+                if ( exportExtraData ( extraPlug, attributeName, techniqueSource, extraSource, openedExtraSource, baseExtraTechnique ) )
+                    openedExtraSource = true;
+                return openedExtraSource;
+#endif
+            }
+ 
+            MString name = extraAttribute.name ();
+            if( name.length() == 0 ) return false;
+            
+            // The attribute with the collada profile name.
+            // The profile name has always the path attribute name in front.
+            //String profileName = name.asUTF8 ();
+            //profileName = profileName.substr ( parentAttributeName.length () + 1 );
+            String profileName = PROFILE_MAYA;
+            
+            String strParamName = name.asUTF8 ();
+            
+            // Open the extra source tag, if neccessary.
+            if ( !openedExtraSource ) 
+            {
+                if( baseExtraTechnique == NULL )
+                {
+                    extraSource.openExtra();
+                    techniqueSource->openTechnique ( profileName );
+                    techniqueSource->addChildElement( s_strDynAttrName );
+                }
+                else
+                {
+                    //baseExtraTechnique->addExtraTechniqueChildParameter ( profileName, s_strDynAttrName );
+                }
+            }
+            
+             // The attribute value.
+            
+            String source;
+            MObject attribute(extraPlug.attribute());
+            if (attribute.hasFn(MFn::kTypedAttribute))
+            {
+                const char* typeName = NULL;
+                MFnTypedAttribute typedAttrFn(extraAttribute.object());
+                switch (typedAttrFn.attrType())
+                {
+                case MFnData::kString: { // Not animatable
+                    MString value; extraPlug.getValue(value);
+                    if( baseExtraTechnique == NULL )
+                    {
+                        const String strValue = value.asUTF8();
+                        techniqueSource->addParameter( strParamName, strValue );
+                    }
+                    else
+                    {
+                        const String strValue = value.asUTF8();
+                        baseExtraTechnique->addExtraTechniqueChildParameter( profileName, s_strDynAttrName, strParamName, strValue );
+                    }
+                    break; }
+
+                case MFnData::kMatrix: { // Not animatable
+                    MMatrix value; DagHelper::getPlugValue(extraPlug, value);
+                    double dest[4][4];
+                    value.get( dest );
+                    if( baseExtraTechnique == NULL )
+                    {
+                        techniqueSource->addMatrixParameter( strParamName, dest );
+                    }
+                    else
+                    {
+                        baseExtraTechnique->addExtraTechniqueChildParameter( profileName, s_strDynAttrName, strParamName, dest );
+                    }
+                    break; }
+
+                default: break; // none of the other types will be importable.
+                }
+            }
+            else if (attribute.hasFn(MFn::kNumericAttribute))
+            {
+                MFnNumericAttribute numericAttrFn(extraAttribute.object());
+                switch (numericAttrFn.unitType())
+                {
+                case MFnNumericData::kBoolean: {
+                    bool value; DagHelper::getPlugValue(extraPlug, value);
+                    if( baseExtraTechnique == NULL )
+                    {
+                        techniqueSource->addParameter( strParamName, value );
+                    }
+                    else
+                    {
+                        baseExtraTechnique->addExtraTechniqueChildParameter( profileName, s_strDynAttrName, strParamName, value );
+                    }
+                    break; }
+
+                case MFnNumericData::kByte:
+                case MFnNumericData::kChar:
+                case MFnNumericData::kShort:
+                case MFnNumericData::k2Short:
+                case MFnNumericData::k3Short:
+                case MFnNumericData::kLong:
+                case MFnNumericData::k2Long:
+                case MFnNumericData::k3Long: {
+                    int value; DagHelper::getPlugValue(extraPlug, value);
+                    if( baseExtraTechnique == NULL )
+                    {
+                        techniqueSource->addParameter( strParamName, value );
+                    }
+                    else
+                    {
+                        baseExtraTechnique->addExtraTechniqueChildParameter( profileName, s_strDynAttrName, strParamName, value );
+                    }
+                    break; }
+
+                case MFnNumericData::kDouble:
+                case MFnNumericData::kFloat: 
+                case MFnNumericData::k2Double:
+                case MFnNumericData::k2Float: {
+                    float value; DagHelper::getPlugValue(extraPlug, value);
+                    if( baseExtraTechnique == NULL )
+                    {
+                        techniqueSource->addParameter( strParamName, value );
+                    }
+                    else
+                    {
+                        baseExtraTechnique->addExtraTechniqueChildParameter( profileName, s_strDynAttrName, strParamName, value );
+                    }
+                    break; }
+
+                case MFnNumericData::k3Double:
+                case MFnNumericData::k3Float: {
+                    int value; DagHelper::getPlugValue(extraPlug, value);
+                    if( baseExtraTechnique == NULL )
+                    {
+                        techniqueSource->addParameter( strParamName, value );
+                    }
+                    else
+                    {
+                        baseExtraTechnique->addExtraTechniqueChildParameter( profileName, s_strDynAttrName, strParamName, value );
+                    }
+                    break; }
+                }
+            }
+            else if (attribute.hasFn(MFn::kEnumAttribute))
+            {
+                MFnEnumAttribute enumFn(extraAttribute.object());
+                int index; DagHelper::getPlugValue(extraPlug, index);
+
+                MStatus status;
+                MString value = enumFn.fieldName((short) index, &status);
+                //FUAssert(status, return);
+                const String strValue = value.asUTF8();
+                if( baseExtraTechnique == NULL )
+                {
+                    techniqueSource->addParameter( strParamName, strValue );
+                }
+                else
+                {
+                    baseExtraTechnique->addExtraTechniqueChildParameter( profileName, s_strDynAttrName, strParamName, strValue );
+                }
+            }
+         }
+         return true;
+     }
+     
+#else//AD_IGNORE_MODIFY
+
 //     // --------------------------------------
 //     void DocumentExporter::exportExtraData ( 
 //         const MObject& node, 
@@ -591,4 +894,8 @@ namespace COLLADAMaya
 // 
 //         return closeExtraSource;
 //     }
+
+#endif//AD_IGNORE_MODIFY
+
+
 }

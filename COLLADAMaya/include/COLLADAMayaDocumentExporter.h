@@ -270,6 +270,34 @@ namespace COLLADAMaya
          * Do all stuff to end the export.
          */
         void endExport();
+#ifndef AD_INGORE_MODIFY
+//AD_EXPORT_MATERIAL_EXT_ATTR
+
+         /**
+          * Exports the user defined extra data of the node.
+          * @param MObject& node The dependency node which holds the extra data
+          * @param BaseExtraTechnique* baseExtraTechnique The extra technique element.
+          */
+         void exportExtraData (
+             const MObject& node,
+             COLLADASW::BaseExtraTechnique* baseExtraTechnique = 0 );
+
+         /**
+          * TODO Documentation
+          * @param const MPlug& childPlug
+          * @param const String& pathAttributeName
+          * @param COLLADASW::BaseExtraTechnique* baseExtraTechnique
+          * @param COLLADASW::Extra& extraSource
+          */
+         bool exportExtraData (
+            const MPlug& childPlug,
+            const String& pathAttributeName,
+            COLLADASW::Technique* technique,
+            COLLADASW::Extra& extraSource,
+            bool openedExtraSource,
+            COLLADASW::BaseExtraTechnique* baseExtraTechnique /*= 0*/ );
+
+#else//AD_IGNORE_MODIFY
 
 //         /**
 //          * Exports the user defined extra data of the node.
@@ -298,6 +326,7 @@ namespace COLLADAMaya
 //             COLLADASW::BaseExtraTechnique* baseExtraTechnique, 
 //             COLLADASW::Extra& extraSource, 
 //             const char* secondKey /*= 0*/ );
+#endif//AD_IGNORE_MODIFY
 
     private:
 
