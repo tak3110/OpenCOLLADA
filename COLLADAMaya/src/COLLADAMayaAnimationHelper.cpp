@@ -551,6 +551,10 @@ namespace COLLADAMaya
 
         case kVector:
         case kColour:
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_VECTOR2_ANIMATION
+        case kVector2:
+#endif//AD_IGNORE_MODIFY
         {
             // Check for one node affecting the whole value.
             bool forceSampling = ExportOptions::isSampling();

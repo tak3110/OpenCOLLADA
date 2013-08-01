@@ -86,6 +86,11 @@ namespace COLLADAMaya
 
         if ( ( mSampleType & kBoolean ) == kBoolean )
             return 1;
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_VECTOR2_ANIMATION
+        else if ( ( mSampleType & kVector2 ) == kVector2 )
+            return 2;
+#endif//AD_IGNORE_MODIFY
 
         else if ( ( mSampleType & kMatrix ) == kMatrix )
             return 16;

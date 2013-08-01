@@ -36,7 +36,11 @@ namespace COLLADAMaya
         kMatrix = 0x04,
         // Boolean
         kBoolean = 0x05,
-
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_VECTOR2_ANIMATION
+        // Vector2 value: U, V
+        kVector2 = 0x06,
+#endif//AD_IGNORE_MODIFY
         // Angle type, there will be rad <-> degree conversions
         kAngle = 0x10,
         kQualifiedAngle = 0x30,
