@@ -105,6 +105,24 @@ namespace COLLADAMaya
             // Export the curves of the animated element and of the child elements recursive
             exportAnimatedElements ( mAnimationElements );
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_TIME
+            {
+                COLLADASW::Extra extraSource ( mSW );
+                extraSource.openExtra();
+                COLLADASW::Technique techniqueSource ( mSW );
+                techniqueSource.openTechnique ( PROFILE_MAYA );
+
+                techniqueSource.addParameter ( "start_time", (float) AnimationHelper::animationStartTime().as(MTime::kSeconds) );
+                techniqueSource.addParameter ( "end_time", (float) AnimationHelper::animationEndTime().as(MTime::kSeconds) );
+                techniqueSource.addParameter ( "min_time", (float) AnimationHelper::minTime().as(MTime::kSeconds) );
+                techniqueSource.addParameter ( "max_time", (float) AnimationHelper::maxTime().as(MTime::kSeconds) );
+                techniqueSource.addParameter ( "frames_per_second", (float) AnimationHelper::framesPerSecond() );
+                techniqueSource.closeTechnique();
+                extraSource.closeExtra();
+            }
+#endif//AD_IGNORE_MODIFY
+
             // Close the collada animation tag
             closeLibrary();
         }

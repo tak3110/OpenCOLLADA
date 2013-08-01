@@ -101,6 +101,12 @@ namespace COLLADAMaya
         static void getCurrentTime ( MTime& time );
         static void setCurrentTime ( const MTime& time );
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_TIME
+        static MTime minTime();
+        static MTime maxTime();
+        static double framesPerSecond();
+#endif//AD_IGNORE_MODIFY
         // Handle animation targetting
         static MPlug getTargetedPlug ( MPlug parentPlug, int index );
 

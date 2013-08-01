@@ -372,6 +372,65 @@ namespace COLLADAMaya
     }
 
     // -------------------------------------------
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_TIME
+    MTime AnimationHelper::minTime()
+    {
+        MTime time ( MAnimControl::currentTime() );
+        double result;
+        MGlobal::executeCommand ( "playbackOptions -q -" "minTime", result );
+        time.setValue ( result );
+        return time;
+    }
+
+    // -------------------------------------------
+    MTime AnimationHelper::maxTime()
+    {
+        MTime time ( MAnimControl::currentTime() );
+        double result;
+        MGlobal::executeCommand ( "playbackOptions -q -" "maxTime", result );
+        time.setValue ( result );
+        return time;
+    }
+
+    // -------------------------------------------
+    double AnimationHelper::framesPerSecond()
+    {
+        MString unitTimeName;
+        MGlobal::executeCommand ( "currentUnit -q -time", unitTimeName );
+
+        double result = 0.0f;
+        if( 0==stricmp( "game", unitTimeName.asChar() ) ){    //15 fps.
+            result = 15.0f;
+        }else if( 0==stricmp( "film", unitTimeName.asChar() ) ){    //24 fps.
+            result = 24.0f;
+        }else if( 0==stricmp( "pal",  unitTimeName.asChar() ) ){    //25 fps.
+            result = 25.0f;
+        }else if( 0==stricmp( "ntsc", unitTimeName.asChar() ) ){    //30 fps.
+            result = 30.0f;
+        }else if( 0==stricmp( "show", unitTimeName.asChar() ) ){    //48 fps.
+            result = 48.0f;
+        }else if( 0==stricmp( "palf", unitTimeName.asChar() ) ){    //50 fps.
+            result = 50.0f;
+        }else if( 0==stricmp( "ntscf", unitTimeName.asChar() ) ){    //60 fps.
+            result = 60.0f;
+        }else if( 0==stricmp( "millisec", unitTimeName.asChar() ) ){    //1000 fps.
+            result = 1000.0f;
+        }else if( 0==stricmp( "sec", unitTimeName.asChar() ) ){    //1 fps.
+            result = 1.0f;
+        }else if( 0==stricmp( "min", unitTimeName.asChar() ) ){    //1/60 fps.
+            result = 1/60.0f;
+        }else if( 0==stricmp( "hour", unitTimeName.asChar() ) ){    //1/360 fps.
+            result = 1/360.0f;
+        }else{
+            int iTmp;
+            sscanf(unitTimeName.asChar(), "%dfps", &iTmp );
+            result = static_cast<double>(iTmp);
+        }
+
+        return result;
+    }
+#endif//AD_IGNORE_MODIFY
     MPlug AnimationHelper::getTargetedPlug ( MPlug parentPlug, int index )
     {
         if ( index >= 0 && parentPlug.isCompound() )
