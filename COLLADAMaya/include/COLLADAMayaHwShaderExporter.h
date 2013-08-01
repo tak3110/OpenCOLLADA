@@ -51,7 +51,21 @@ namespace COLLADAMaya
 
     public:
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_PATH_STATE
+        bool  mAlphaRefFound;
+        float mAlphaRef;
+
+        String mStateAlphaRefName;
+
+        HwShaderExporter ( DocumentExporter* documentExporter )
+            : mDocumentExporter ( documentExporter ) , mAlphaRefFound(false), mAlphaRef(0.0f)
+        {
+            mStateAlphaRefName  = "alpharef";
+        }
+#else//AD_IGNORE_MODIFY
         HwShaderExporter ( DocumentExporter* documentExporter ) : mDocumentExporter ( documentExporter ) {}
+#endif//AD_IGNORE_MODIFY
 
         virtual ~HwShaderExporter () {}
 
