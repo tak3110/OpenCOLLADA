@@ -445,8 +445,13 @@ namespace COLLADAMaya
         // Get the animated curves (possibly without the static curves)
         AnimationCurveList curves = animationElement->getAnimatedCurves();
 
+#ifndef AD_IGNORE_MODIFY
+//AD_SAMPLING_DEFECT
+        if( (curves.size() <= 1) && !animationElement->isSampling() )
+#else//AD_IGNORE_MODIFY
         // Check if all curves have the same inputs, interpolations and infinity types
         if ( curves.size() <= 1 )
+#endif//AD_IGNORE_MODIFY
         {
             doMergeCurves = false;
         }

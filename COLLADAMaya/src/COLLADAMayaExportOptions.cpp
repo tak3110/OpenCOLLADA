@@ -152,7 +152,18 @@ namespace COLLADAMaya
             }
         }
 
+#ifndef AD_IGNORE_MODIFY
+//AD_SAMPLING_DEFECT
+// tasaitoh 2012/09/11
+// memo.
+// SampleをONにすると、各プラグがキャッシュに登録されサンプリングされる。
+// キャッシュにつまれたプラグについてのアニメーション判定がpostSamplingで行われているが、
+// これを実行するには、mSamplingTimesが定義されていなければならない.
+// しかし、サンプリングをONにするとmSamplingTimesが登録されない.
+// 従って下記は常にONであるべきと考える.
+#else//AD_IGNORE_MODIFY
         if ( !mIsSampling )
+#endif//AD_IGNORE_MODIFY
         {
             AnimationHelper::generateSamplingFunction();
         }
