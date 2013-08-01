@@ -54,6 +54,15 @@ namespace COLLADAMaya
     bool ExportOptions::mIsSampling = false;
     bool ExportOptions::mCurveConstrainSampling = false;
 
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+    bool ExportOptions::mOmitTimeStamps = false;
+    bool ExportOptions::mOmitCustomVersion = false;
+    bool ExportOptions::mOmitAuthoringTool = false;
+    bool ExportOptions::mOmitAuthor = false;
+    String ExportOptions::mOmitShaderParams = "";
+#endif//AD_IGNORE_MODIFY
+
     // Parse the options String
     void ExportOptions::set ( const MString& optionsString )
     {
@@ -92,7 +101,14 @@ namespace COLLADAMaya
         mCameraYFov = true;
         mDoublePrecision = false;
         mExportCgfxFileReferences = true;
-
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        mOmitTimeStamps = false;
+        mOmitCustomVersion = false;
+        mOmitAuthoringTool = false;
+        mOmitAuthor = false;
+        mOmitShaderParams = "";
+#endif//AD_IGNORE_MODIFY
         // Parse option String
         if ( optionsString.length() > 0 )
         {
@@ -149,6 +165,14 @@ namespace COLLADAMaya
                 else if ( optionName == "removeStaticCurves" ) mRemoveStaticCurves = value;
                 else if ( optionName == "exportXRefs" ) mExportXRefs = value;
                 else if ( optionName == "dereferenceXRefs" ) mDereferenceXRefs = value;
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+                else if ( optionName == "omitTimeStamps" ) mOmitTimeStamps = value;
+                else if ( optionName == "omitCustomVersion" ) mOmitCustomVersion = value;
+                else if ( optionName == "omitAuthoringTool" ) mOmitAuthoringTool = value;
+                else if ( optionName == "omitAuthor" ) mOmitAuthor = value;
+                else if ( optionName == "omitShaderParams" ) mOmitShaderParams = decomposedOption[1].asChar();
+#endif//AD_IGNORE_MODIFY
             }
         }
 
@@ -307,5 +331,45 @@ namespace COLLADAMaya
     {
         return mExportCgfxFileReferences;
     }
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+    bool ExportOptions::omitTimestamps()
+    {
+        return mOmitTimeStamps;
+    }
+
+    bool ExportOptions::omitCusomVersion()
+    {
+        return mOmitCustomVersion;
+    }
+
+    bool ExportOptions::omitAuthoringTool()
+    {
+        return mOmitAuthoringTool;
+    }
+
+    bool ExportOptions::omitAuthor()
+    {
+        return mOmitAuthor;
+    }
+
+    bool ExportOptions::isOmitShaderParams( const char* paramName )
+    {
+        std::vector<String> words;
+
+        COLLADABU::Utils::split( 
+            mOmitShaderParams,
+            ":",
+            words
+            );
+                
+        for( std::vector<String>::const_iterator it=words.begin(); it!=words.end(); ++it )
+        {
+            if( 0==stricmp( paramName, it->c_str() ) )
+                return true;
+        }
+        return false;
+    }
+#endif//AD_IGNORE_MODIFY
 
 }

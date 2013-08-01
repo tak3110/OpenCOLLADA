@@ -16,6 +16,11 @@
 #ifndef __COLLADA_MAYA_EXPORT_OPTIONS_H__
 #define __COLLADA_MAYA_EXPORT_OPTIONS_H__
 
+#ifndef AD_IGNORE_MODIFY
+#include "COLLADAMayaPrerequisites.h"
+#endif//AD_IGNORE_MODIFY
+
+
 #include <maya/MPxFileTranslator.h>
 
 
@@ -97,6 +102,14 @@ namespace COLLADAMaya
 
         static bool mDoublePrecision;
 
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        static bool mOmitTimeStamps;
+        static bool mOmitCustomVersion;
+        static bool mOmitAuthoringTool;
+        static bool mOmitAuthor;
+        static String mOmitShaderParams;
+#endif//AD_IGNORE_MODIFY
     public:
 
         /** Parse the options String and reset all options to their default values. */
@@ -163,6 +176,14 @@ namespace COLLADAMaya
         /****************************/
 
         static bool doublePrecision();
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        static bool omitTimestamps();
+        static bool omitCusomVersion();
+        static bool omitAuthoringTool();
+        static bool omitAuthor();
+        static bool isOmitShaderParams( const char* paramName );
+#endif//AD_IGNORE_MODIFY
 
     };
 

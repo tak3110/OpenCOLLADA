@@ -201,8 +201,40 @@ namespace COLLADAMaya
     //---------------------------------------------------------------
     void DocumentExporter::exportAsset()
     {
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        if ( !ExportOptions::omitCusomVersion() )
+        {
+            COLLADASW::Extra extra( &mStreamWriter );
+            extra.openExtra();
+
+            COLLADASW::Technique techniqueSource ( &mStreamWriter );
+            techniqueSource.openTechnique( PROFILE_MAYA );
+            techniqueSource.addParameter( PARAMETER_TRANSLATOR_VENDOR_CUSTOM, String(TRANSLATOR_VENDOR_CUSTOM) );    //TODO const char* ëŒâûä÷êîÇópà”Ç∑ÇÈ...
+            techniqueSource.addParameter( PARAMETER_TRANSLATOR_VERSION_CUSTOM, String(TRANSLATOR_VERSION_CUSTOM) );
+            techniqueSource.closeTechnique();
+            extra.closeExtra();
+        }
+#endif//AD_IGNORE_MODIFY
         COLLADASW::Asset asset ( &mStreamWriter );
 
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        char* userName = NULL;
+        if( !ExportOptions::omitAuthor() )
+        {
+            userName = getenv ( USERNAME );
+            if ( !userName || *userName == 0 ) 
+            {
+                userName = getenv ( USER );
+            }
+        }
+
+        if ( userName && *userName != 0 ) 
+        {
+            asset.getContributor().mAuthor = NativeString( userName ).toUtf8String();
+        }
+#else//AD_IGNORE_MODIFY
         // Add contributor information
         // Set the author
         char* userName = getenv ( USERNAME );
@@ -215,6 +247,7 @@ namespace COLLADAMaya
 		{
 			asset.getContributor().mAuthor = NativeString( userName ).toUtf8String();
 		}
+#endif//AD_IGNORE_MODIFY
 
         // Source is the scene we have exported from
         String currentScene = MFileIO::currentFile().asChar();
@@ -226,7 +259,15 @@ namespace COLLADAMaya
             asset.getContributor().mSourceData = sourceFileUri.getURIString();
         }
 
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        if ( !ExportOptions::omitAuthoringTool() )
+        {
+            asset.getContributor().mAuthoringTool = AUTHORING_TOOL_NAME + MGlobal::mayaVersion().asChar();
+        }
+#else//AD_IGNORE_MODIFY
         asset.getContributor().mAuthoringTool = AUTHORING_TOOL_NAME + MGlobal::mayaVersion().asChar();
+#endif//AD_IGNORE_MODIFY
 
         // comments
         MString optstr = MString ( "\n\t\t\tColladaMaya export options: " )
@@ -285,6 +326,19 @@ namespace COLLADAMaya
         double colladaConversionFactor = ( float ) testDistance.as ( MDistance::kMeters );
         float colladaUnitFactor = float ( 1.0 / colladaConversionFactor );
         asset.setUnit ( linearUnitName, colladaConversionFactor );
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        {
+            time_t _t;
+
+            if( ExportOptions::omitTimestamps() ){
+                _t = 0;
+            }else{
+                time ( &_t );
+            }
+            asset.setCreatedTime( _t );
+        }
+#endif//AD_IGNORE_MODIFY
 
         // Asset heraus schreiben
         asset.add();

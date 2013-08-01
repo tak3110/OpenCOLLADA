@@ -22,6 +22,10 @@ namespace COLLADASW
     Asset::Asset ( StreamWriter * streamWriter )
             : ElementWriter ( streamWriter ),
             mUpAxisType ( NONE )
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+			, createdTime(0)
+#endif//AD_IGNORE_MODIFY
     {}
 
 
@@ -63,12 +67,16 @@ namespace COLLADASW
         // create a stringstream containing the current date and time in ISO 8601 format
         std::stringstream curDate;
 
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        struct tm *t = localtime ( &createdTime );
+#else//AD_IGNORE_MODIFY
         time_t _t;
 
         time ( &_t );
 
         struct tm *t = localtime ( &_t );
-
+#endif//AD_IGNORE_MODIFY
         curDate << t->tm_year + 1900 << "-" << ( t->tm_mon < 9 ? "0" : "" ) << t->tm_mon + 1
         << "-" << ( t->tm_mday <= 9 ? "0" : "" ) << t->tm_mday
         << "T" << ( t->tm_hour <= 9 ? "0" : "" ) << t->tm_hour

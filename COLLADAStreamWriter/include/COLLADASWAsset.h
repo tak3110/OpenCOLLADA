@@ -93,6 +93,10 @@ namespace COLLADASW
         to the right, and which is considered inward. */
         UpAxisType mUpAxisType;
 
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        time_t createdTime;
+#endif//AD_IGNORE_MODIFY
     public:
         /** Constructor that sets the stream the asset should be written to*/
         Asset ( StreamWriter * streamWriter );
@@ -196,6 +200,18 @@ namespace COLLADASW
         {
             return mUpAxisType;
         }
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+        void setCreatedTime( const time_t& time )
+        {
+            createdTime = time;
+        }
+
+        const time_t getCreatedTime()
+        {
+            return createdTime;
+        }
+#endif//AD_IGNORE_MODIFY
 
 
     };
