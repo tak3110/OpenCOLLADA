@@ -1049,6 +1049,18 @@ namespace COLLADABU
 
 	String URI::toNativePath(Utils::SystemType type) const
     {
+#ifndef AD_IGNORE_MODIFY
+//AD_ASSERT_NATIVE_PATH
+        if(
+            ( !mScheme.empty() && mScheme =="C" ) ||
+            ( !mScheme.empty() && mScheme =="D" ) ||
+            ( !mScheme.empty() && mScheme =="E" )
+            )
+        {
+            COLLADABU_ASSERT(0);
+        }
+#endif//AD_IGNORE_MODIFY
+
 //		String scheme, authority, path, query, fragment;
 //		parseUriRef(uriRef, scheme, authority, path, query, fragment);
 
