@@ -537,6 +537,19 @@ namespace COLLADAMaya
                 forceSampling |= !connection.isNull() && !connection.hasFn ( MFn::kCharacter ) && !connection.hasFn ( MFn::kAnimCurve );
                 forceSampling &= !isPhysicsAnimation ( connection );
             }
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_ANIMATION_FORCE_EXPORT_STATIC_CURVE
+            else
+            {
+                MObject connection = AnimationHelper::getAnimatingNode ( plug );
+                if( AnimationHelper::isSimpleInterpolationType( connection, COLLADASW::LibraryAnimations::LINEAR ) ||
+                    AnimationHelper::isSimpleInterpolationType( connection, COLLADASW::LibraryAnimations::STEP   )
+                    )
+                {
+                    forceSampling = false;
+                }
+            }
+#endif//AD_IGNORE_MODIFY
             if ( forceSampling ) cache->cachePlug ( plug, false );
 
             break;
@@ -560,7 +573,33 @@ namespace COLLADAMaya
                 forceSampling |= !connection.isNull() && !connection.hasFn ( MFn::kCharacter ) && !connection.hasFn ( MFn::kAnimCurve );
                 forceSampling &= !isPhysicsAnimation ( connection );
             }
-
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_ANIMATION_FORCE_EXPORT_STATIC_CURVE
+            else
+            {
+                uint elementCount = plug.numChildren();
+                bool bAllSimple = true;
+                for ( uint curveIndex=0; curveIndex<elementCount; ++curveIndex )
+                {
+                    MPlug childPlug = plug.child ( curveIndex );
+                    MObject connection = AnimationHelper::getAnimatingNode ( childPlug );
+                    if( AnimationHelper::isSimpleInterpolationType( connection, COLLADASW::LibraryAnimations::LINEAR ) ||
+                        AnimationHelper::isSimpleInterpolationType( connection, COLLADASW::LibraryAnimations::STEP   )
+                        )
+                    {
+                        //
+                    }
+                    else
+                    {
+                        bAllSimple = false;
+                    }
+                }
+                if( bAllSimple )
+                {
+                    forceSampling = false;
+                }
+            }
+#endif//AD_IGNORE_MODIFY
             if ( forceSampling ) cache->cachePlug ( plug, false );
             else
             {
@@ -580,4 +619,40 @@ namespace COLLADAMaya
         }
         }
     }
+
+
+
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_ANIMATION_FORCE_EXPORT_STATIC_CURVE
+
+    bool AnimationHelper::isSimpleInterpolationType( const MPlug& plug, COLLADASW::LibraryAnimations::InterpolationType interpolationType )
+    {
+        // Get the curve object
+        MObject curveObject = DagHelper::getSourceNodeConnectedTo ( plug );
+        return AnimationHelper::isSimpleInterpolationType( curveObject, interpolationType );
+    }
+
+    bool AnimationHelper::isSimpleInterpolationType( const MObject& curveObject, COLLADASW::LibraryAnimations::InterpolationType interpolationType )
+    {
+        MStatus status;
+        MFnAnimCurve animCurveFn ( curveObject, &status );
+        if ( status != MStatus::kSuccess ){
+            return false;
+        }
+
+        COLLADASW::LibraryAnimations::InterpolationType tmp;        
+        uint keyCount = animCurveFn.numKeys();
+        for ( uint keyPosition = 0; keyPosition < keyCount; ++keyPosition )
+        {
+            tmp = AnimationHelper::toInterpolation ( animCurveFn.outTangentType ( keyPosition ) );
+            if( interpolationType != tmp ){
+                return false;
+            }
+        }
+
+        return true;
+    }
+#endif//AD_IGNORE_MODIFY
+
+
 }

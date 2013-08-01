@@ -109,6 +109,11 @@ namespace COLLADAMaya
         static MFnAnimCurve::TangentType toTangentType ( COLLADASW::LibraryAnimations::InterpolationType type );
 
         static const String mayaInfinityTypeToString ( MFnAnimCurve::InfinityType type );
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_ANIMATION_FORCE_EXPORT_STATIC_CURVE
+        static bool isSimpleInterpolationType( const MPlug& plug, COLLADASW::LibraryAnimations::InterpolationType interpolationType );
+        static bool isSimpleInterpolationType( const MObject& curveObject, COLLADASW::LibraryAnimations::InterpolationType interpolationType );
+#endif//AD_IGNORE_MODIFY
 
     private:
 
