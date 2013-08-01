@@ -25,6 +25,12 @@ namespace COLLADAMaya
     // COLLADA NetAllied Systems
     static const char* TRANSLATOR_VENDOR                            = "NetAllied Systems GmbH";
     static const char* TRANSLATOR_VERSION                           = "1.3.0";
+#ifndef AD_IGNORE_MODIFY
+//AD_ADDITIONAL_ASSET_INFO
+    static const char* TRANSLATOR_VENDOR_CUSTOM                        = "ARTDINK";
+    //[original version]-[project]-[YYYY]-[MM]-[DD]-[M]
+    static const char* TRANSLATOR_VERSION_CUSTOM                    = "DAE2AXL-2013-07-23-B";
+#endif//AD_IGNORE_MODIFY
     static const char* USERNAME                                     = "USERNAME";
     static const char* USER                                         = "USER";
 
@@ -32,7 +38,12 @@ namespace COLLADAMaya
     static const char* COLLADA_EXPORTER                             = "OpenCOLLADA exporter";
     static const char* COLLADA_IMPORTER                             = "OpenCOLLADA importer";
     static const char* COLLADA_DOCUMENT                             = "colladaDocument";
+#ifndef AD_IGNORE_MODIFY
+//AD_ADDITIONAL_ASSET_INFO
+    static const String AUTHORING_TOOL_NAME                         = "OpenCOLLADA-ARTDINK";
+#else//AD_IGNORE_MODIFY
     static const String AUTHORING_TOOL_NAME                         = "OpenCOLLADA";
+#endif//AD_IGNORE_MODIFY
 
     /** Profile specific extra attribute parameters. */
     static const char* PROFILE_COLLADA                              = "COLLADA";
@@ -43,6 +54,11 @@ namespace COLLADAMaya
     static const String PARAMETER_MAYA_ID                           = "originalMayaNodeId";
     static const String PARAMETER_DOUBLE_SIDED                      = "double_sided";
 
+#ifndef AD_IGNORE_MODIFY
+//AD_ADDITIONAL_ASSET_INFO
+    static const String PARAMETER_TRANSLATOR_VENDOR_CUSTOM          = "translator_vendor_custom";
+    static const String PARAMETER_TRANSLATOR_VERSION_CUSTOM         = "translator_version_custom";
+#endif//AD_IGNORE_MODIFY
     /** Empty strings. */
     static const String EMPTY_STRING                                = "";
     static const char* EMPTY_CSTRING                                = "";

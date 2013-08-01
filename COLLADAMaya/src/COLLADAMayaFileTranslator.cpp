@@ -82,12 +82,29 @@
         std::ostringstream stream; 
         stream << MAYA_API_VERSION;
 
+#ifndef AD_IGNORE_MODIFY
+//AD_ADDITIONAL_ASSET_INFO
+        COLLADAMaya::String revision( COLLADAMaya::TRANSLATOR_VERSION );
+        revision += COLLADAMaya::String(".") + COLLADAMaya::CURRENT_REVISION;
+        revision += COLLADAMaya::String("-") + COLLADAMaya::TRANSLATOR_VERSION_CUSTOM;    // additional custom version.
+        
+        COLLADAMaya::String vendor( COLLADAMaya::TRANSLATOR_VENDOR );
+        vendor += COLLADAMaya::String(",") + COLLADAMaya::TRANSLATOR_VENDOR_CUSTOM;    // additional corpolation name.
+
+        MFnPlugin plugin(
+            obj,
+            vendor.c_str(),
+            revision.c_str(), 
+            stream.str().c_str()
+            );
+#else//AD_IGNORE_MODIFY
         COLLADAMaya::String revision ( COLLADAMaya::TRANSLATOR_VERSION );
         revision += "." + COLLADAMaya::CURRENT_REVISION;
         MFnPlugin plugin ( obj, 
             COLLADAMaya::TRANSLATOR_VENDOR, 
             revision.c_str (), 
             stream.str ().c_str () );
+#endif//AD_IGNORE_MODIFY
 
         // --------------------------------------------------------------
         // Register the import and the export file translator plug-ins.
