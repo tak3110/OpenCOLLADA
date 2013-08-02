@@ -1129,9 +1129,47 @@ namespace COLLADAMaya
             COLLADASW::URI shaderFxFileUri = getShaderFxFileUri();
 
             // Take the filename for the unique image name
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_IMAGE_FILE_DEFECT
+            COLLADASW::URI sourceFileUri ( shaderFxFileUri, URI::nativePathToUri( fileName ) );
+#else//AD_IGNORE_MODIFY
             COLLADASW::URI sourceFileUri ( shaderFxFileUri, fileName );
+#endif//AD_IGNORE_MODIFY
             if ( sourceFileUri.getScheme ().empty () )
                 sourceFileUri.setScheme ( COLLADASW::URI::SCHEME_FILE );
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_IMAGE_FILE_DEFECT
+            String mayaImageId = sourceFileUri.getPath().c_str();
+
+            // Get the image id of the maya image 
+            String colladaImageId = effectExporter->findColladaImageId ( mayaImageId );
+            if ( colladaImageId.empty () )
+            {
+                // Generate a COLLADA id for the new light object
+                colladaImageId = DocumentExporter::mayaNameToColladaName ( sourceFileUri.getPathFileBase().c_str () );
+
+                // Make the id unique and store it in a map for refernences.
+                EffectTextureExporter* textureExporter = effectExporter->getTextureExporter ();
+                colladaImageId = textureExporter->getImageIdList ().addId ( colladaImageId );
+                textureExporter->getMayaIdColladaImageId () [mayaImageId] = colladaImageId;
+            }
+
+            // Export the image
+            
+            // Reset maya image id.
+            {
+                URI uriTmp( mayaImageId );
+                mayaImageId = DocumentExporter::mayaNameToColladaName ( uriTmp.getPathFileBase().c_str() );
+            }
+
+            COLLADASW::Image* colladaImage = textureExporter->exportImage ( mayaImageId, colladaImageId, sourceFileUri );
+
+            // Get the image id of the exported collada image
+            colladaImageId = colladaImage->getImageId();
+
+            // Set the image reference
+            sampler.setImageId ( colladaImageId );
+#else//AD_IGNORE_MODIFY
             String mayaImageId = DocumentExporter::mayaNameToColladaName ( sourceFileUri.getPathFileBase().c_str () );
 
             // Get the image id of the maya image 
@@ -1155,6 +1193,7 @@ namespace COLLADAMaya
 
             // Set the image reference
             sampler.setImageId ( colladaImageId );
+#endif//AD_IGNORE_MODIFY
         }
     }
 

@@ -677,12 +677,23 @@ namespace COLLADAMaya
     // ------------------------------------
     const String EffectExporter::findColladaImageId ( const String& mayaImageId )
     {
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_IMAGE_FILE_DEFECT
+        EffectTextureExporter* effectTextureExporter = this->getTextureExporter();
+        const StringToStringMap::const_iterator it = effectTextureExporter->getMayaIdColladaImageId().find( mayaImageId );
+        if ( it != effectTextureExporter->getMayaIdColladaImageId().end () )
+        {
+            return it->second;
+        }
+        return EMPTY_STRING;
+#else//AD_IGNORE_MODIFY
         const StringToStringMap::const_iterator it = mMayaIdColladaImageIdMap.find ( mayaImageId );
         if ( it != mMayaIdColladaImageIdMap.end () )
         {
             return it->second;
         }
         return EMPTY_STRING;
+#endif//AD_IGNORE_MODIFY
     }
 
     // ------------------------------------
