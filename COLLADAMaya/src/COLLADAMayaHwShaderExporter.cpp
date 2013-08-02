@@ -800,6 +800,45 @@ namespace COLLADAMaya
         // Create the collada sampler object
         COLLADASW::Sampler sampler ( COLLADASW::Sampler::SAMPLER_TYPE_UNSPECIFIED, samplerSid, surfaceSid );
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_WRAPMODE_DEFECT
+        // Look for the wraps
+        cgStateAssignment = cgGetNamedSamplerStateAssignment ( cgParameter, "WrapS" );
+        if ( !cgStateAssignment ){
+        cgStateAssignment = cgGetNamedSamplerStateAssignment ( cgParameter, "AddressU" );
+        }
+        if ( cgStateAssignment )
+        {
+            CGstate cgState = cgGetSamplerStateAssignmentState ( cgStateAssignment );
+            const int* values = cgGetIntStateAssignmentValues ( cgStateAssignment, &valueCount );
+            const char* cgStateEnum = cgGetStateEnumerantName ( cgState, values[0] );
+            sampler.setWrapS ( COLLADASW::OPEN_GL::getWrapModeFromOpenGL ( cgStateEnum ) );
+        }
+
+        cgStateAssignment = cgGetNamedSamplerStateAssignment ( cgParameter, "WrapT" );
+        if ( !cgStateAssignment ){
+        cgStateAssignment = cgGetNamedSamplerStateAssignment ( cgParameter, "AddressV" );
+        }
+        if ( cgStateAssignment )
+        {
+            CGstate cgState = cgGetSamplerStateAssignmentState ( cgStateAssignment );
+            const int* values = cgGetIntStateAssignmentValues ( cgStateAssignment, &valueCount );
+            const char* cgStateEnum = cgGetStateEnumerantName ( cgState, values[0] );
+            sampler.setWrapT ( COLLADASW::OPEN_GL::getWrapModeFromOpenGL ( cgStateEnum ) );
+        }
+
+        cgStateAssignment = cgGetNamedSamplerStateAssignment ( cgParameter, "WrapP" );
+        if ( !cgStateAssignment ){
+            cgStateAssignment = cgGetNamedSamplerStateAssignment ( cgParameter, "AddressW" );
+        }
+        if ( cgStateAssignment )
+        {
+            CGstate cgState = cgGetSamplerStateAssignmentState ( cgStateAssignment );
+            const int* values = cgGetIntStateAssignmentValues ( cgStateAssignment, &valueCount );
+            const char* cgStateEnum = cgGetStateEnumerantName ( cgState, values[0] );
+            sampler.setWrapP ( COLLADASW::OPEN_GL::getWrapModeFromOpenGL ( cgStateEnum ) );
+        }
+#else//AD_IGNORE_MODIFY
         // Look for the wraps
         cgStateAssignment = cgGetNamedSamplerStateAssignment ( cgParameter, COLLADASW::CSWC::CSW_ELEMENT_WRAP_S.c_str() );
         if ( cgStateAssignment )
@@ -825,6 +864,7 @@ namespace COLLADAMaya
             const char* cgStateEnum = cgGetStateEnumerantName ( cgState, values[0] );
             sampler.setWrapP ( COLLADASW::OPEN_GL::getWrapModeFromOpenGL ( cgStateEnum ) );
         }
+#endif//AD_IGNORE_MODIFY
 
         // Look for the filters
         cgStateAssignment = cgGetNamedSamplerStateAssignment ( cgParameter, COLLADASW::CSWC::CSW_ELEMENT_MAGFILTER.c_str() );
