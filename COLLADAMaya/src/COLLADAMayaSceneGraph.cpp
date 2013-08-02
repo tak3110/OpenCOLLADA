@@ -334,6 +334,12 @@ namespace COLLADAMaya
         bool& isForced,
         bool& isVisible )
     {
+#ifndef AD_IGNORE_MODIFY
+//AD_DEBUG_COMMENTS
+        
+        MFn::Type type = dagPath.apiType();
+        
+#endif//AD_IGNORE_MODIFY
         // Does this dagPath already exist? If so, only recurse if FollowInstancedChildren() is set.
         MFnDagNode dagFn ( dagPath );
         String dagNodeName = dagFn.name().asChar();
