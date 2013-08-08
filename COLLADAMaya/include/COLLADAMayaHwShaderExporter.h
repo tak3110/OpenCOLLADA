@@ -145,7 +145,13 @@ namespace COLLADAMaya
 
         /** Gernerate the program source string. */
         String getProgramSourceString( const char* programSourceCG );
-
+#ifndef AD_IGNRE_MODIFY
+//AD_EXPORT_CGFX_ADD_BOOL_PARAMETER
+        /** Adds an bool parameter into the <technique> tag */
+        void addBoolParameter ( COLLADASW::Sampler* pSampler,
+                                const char* szParamId,
+                                MFnDependencyNode &placement2d );
+#endif//AD_IGNORE_MODIFY
     };
 }
 

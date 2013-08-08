@@ -1288,5 +1288,74 @@ namespace COLLADAMaya
 
         return withoutTechniqueString;
     }
-
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_BOOL_PARAMETER
+    // ------------------------------------------------------------
+    void HwShaderExporter::addBoolParameter (
+        COLLADASW::Sampler* pSampler,
+        const char* szParamId,
+        MFnDependencyNode &placement2d )
+    {
+        MStatus status;
+        MPlug plug = placement2d.findPlug ( szParamId, &status );
+        
+        std::string strParamId = szParamId;
+        
+        if ( status == MStatus::kSuccess )
+        {
+            bool value = false;
+            plug.getValue ( value );
+            
+            COLLADASW::Sampler::WrapMode eMode = COLLADASW::Sampler::WRAP_MODE_NONE;
+            
+            if( strParamId == MAYA_TEXTURE_WRAPU_PARAMETER ||
+                strParamId == MAYA_TEXTURE_WRAPV_PARAMETER )
+            {
+                if( value )
+                {
+                    eMode = COLLADASW::Sampler::WRAP_MODE_WRAP;
+                }
+                else
+                {
+                    eMode = COLLADASW::Sampler::WRAP_MODE_CLAMP;
+                }
+            
+                if( strParamId == MAYA_TEXTURE_WRAPU_PARAMETER )
+                {
+                    
+                    pSampler->setWrapS ( eMode );
+                }
+                else if( strParamId == MAYA_TEXTURE_WRAPV_PARAMETER )
+                {
+                    pSampler->setWrapT ( eMode );
+                }
+            }
+            else if( strParamId == MAYA_TEXTURE_MIRRORU_PARAMETER ||
+                     strParamId == MAYA_TEXTURE_MIRRORV_PARAMETER )
+            {
+                if( !value )
+                {
+                    return;
+                }
+                
+                eMode = COLLADASW::Sampler::WRAP_MODE_MIRROR;
+            
+                if( strParamId == MAYA_TEXTURE_MIRRORU_PARAMETER )
+                {
+                    if( pSampler->getWrapS() == COLLADASW::Sampler::WRAP_MODE_WRAP )
+                    {
+                        pSampler->setWrapS ( eMode );
+                    }
+                }
+                else if( strParamId == MAYA_TEXTURE_MIRRORV_PARAMETER )
+                {
+                    if( pSampler->getWrapT() == COLLADASW::Sampler::WRAP_MODE_WRAP )
+                    {
+                        pSampler->setWrapT ( eMode );
+                    }
+                }
+            }
+        }
+    }
+#endif //AD_IGNORE_MODIFY
 }
