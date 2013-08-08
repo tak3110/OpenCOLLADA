@@ -62,12 +62,27 @@ namespace COLLADAMaya
     {
         // If we have a external reference or an export node, we don't need to export the data here.
         if ( !sceneElement->getIsLocal() ) return;
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CAMERA_DEFECT
+#else//AD_IGNORE_MODIFY
         if ( !sceneElement->getIsExportNode () ) return;
+#endif//AD_IGNORE_MODIFY
 
         // Check if it is a camera
         SceneElement::Type sceneElementType = sceneElement->getType();
         if ( sceneElementType == SceneElement::CAMERA )
         {
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CAMERA_DEFECT
+            if( !ExportOptions::exportDefaultCameras() )
+            {
+                String nodeName = sceneElement->getNodeName();
+                // Check for the default camera transform names.
+                if ( nodeName == CAMERA_PERSP || nodeName == CAMERA_TOP || nodeName == CAMERA_SIDE || nodeName == CAMERA_FRONT ||
+                     nodeName == CAMERA_PERSP_SHAPE || nodeName == CAMERA_TOP_SHAPE || nodeName == CAMERA_SIDE_SHAPE || nodeName == CAMERA_FRONT_SHAPE )
+                    return;
+            }
+#endif//AD_IGNORE_MODIFY
             // Get the current dag path
             MDagPath dagPath = sceneElement->getPath();
 
