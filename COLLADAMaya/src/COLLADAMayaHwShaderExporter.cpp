@@ -826,6 +826,32 @@ namespace COLLADAMaya
             sampler.setWrapP ( COLLADASW::OPEN_GL::getWrapModeFromOpenGL ( cgStateEnum ) );
         }
 
+#ifndef AD_IGNORE_MODIFY
+        //AD_EXPORT_LOD_BIAS
+        //export place2DTexture node's LOD bias.
+        if( !writeNewParam )
+        {
+            COLLADASW::Sampler& samplerTmp = sampler;
+
+            // Check if there is a resource from the user interface input.
+            const char* attributeName = samplerTmp.getSamplerSid ().c_str();
+            MPlug plug;
+            if ( DagHelper::getPlugConnectedTo( shaderNode, attributeName, plug ) )
+            {
+                MObject textureNode = plug.node();
+
+
+                MObject placementNode = DagHelper::getSourceNodeConnectedTo ( textureNode, ATTR_UV_COORD );
+                if ( placementNode.hasFn ( MFn::kPlace2dTexture ) )
+                {
+                    MFnDependencyNode placement2d ( placementNode );
+
+                    // <extra>
+                    mDocumentExporter->exportExtraData( placementNode, &samplerTmp );
+                }
+            }
+        }
+#endif//AD_IGNORE_MODIFY
         // Look for the filters
         cgStateAssignment = cgGetNamedSamplerStateAssignment ( cgParameter, COLLADASW::CSWC::CSW_ELEMENT_MAGFILTER.c_str() );
         if ( cgStateAssignment )
