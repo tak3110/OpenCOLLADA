@@ -285,6 +285,12 @@ namespace COLLADAMaya
         String attributeName = attribute->fName.asChar();
 
         cgfxAttrDef::cgfxAttrType attributeType = attribute->fType;
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO
+
+        if( ExportOptions::isOmitShaderParams( attributeName.c_str() ) )
+            return;
+#endif//AD_IGNORE_MODIFY
         switch ( attributeType )
         {
         case cgfxAttrDef::kAttrTypeBool:
