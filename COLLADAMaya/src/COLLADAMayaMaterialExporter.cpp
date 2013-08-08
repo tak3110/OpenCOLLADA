@@ -37,6 +37,12 @@
 
 #include <cgfxFindImage.h>
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_MAYA2013
+#include <maya/MFnNumericData.h>
+#include <maya/MFnMatrixData.h>
+#endif//AD_IGNORE_MODIFY
+
 namespace COLLADAMaya
 {
 
@@ -282,6 +288,496 @@ namespace COLLADAMaya
         String attributeName = attribute->fName.asChar();
 
         cgfxAttrDef::cgfxAttrType attributeType = attribute->fType;
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_MAYA_2013
+        MStatus status;
+        MObject oNode = shaderNodeCgfx->thisMObject();
+        MFnDependencyNode fnNode( oNode, &status );
+        M_CHECK( status );
+
+        switch ( attribute->fType )
+        {
+        case cgfxAttrDef::kAttrTypeColor3:
+        case cgfxAttrDef::kAttrTypeColor4:
+            {
+                float tmp[4];
+
+                {
+                    MObject oAttr = fnNode.attribute( attribute->fName + "R", &status );
+                    M_CHECK( status );
+                    MPlug plug( oNode, oAttr );
+                    status = plug.getValue( tmp[0] );
+                    M_CHECK( status );
+                }
+
+                {
+                    MObject oAttr = fnNode.attribute( attribute->fName + "G", &status );
+                    M_CHECK( status );
+                    MPlug plug( oNode, oAttr );
+                    status = plug.getValue( tmp[1] );
+                    M_CHECK( status );
+                }
+
+                {
+                    MObject oAttr = fnNode.attribute( attribute->fName + "B", &status );
+                    M_CHECK( status );
+                    MPlug plug( oNode, oAttr );
+                    status = plug.getValue( tmp[2] );
+                    M_CHECK( status );
+                }
+
+                if( attribute->fType == cgfxAttrDef::kAttrTypeColor4 )
+                {
+                    MObject oAttr = fnNode.attribute( attribute->fName + "Alpha", &status );
+                    M_CHECK( status );
+                    MPlug plug( oNode, oAttr );
+                    status = plug.getValue( tmp[3] );
+                    M_CHECK( status );
+
+                    COLLADASW::SetParamFloat4 setParam ( streamWriter );
+                    setParam.openParam ( attributeName );
+                    setParam.appendValues( tmp[0] );
+                    setParam.appendValues( tmp[1] );
+                    setParam.appendValues( tmp[2] );
+                    setParam.appendValues( tmp[3] );
+                    setParam.closeParam ();
+                }
+                else
+                {
+                    COLLADASW::SetParamFloat3 setParam ( streamWriter );
+                    setParam.openParam ( attributeName );
+                    setParam.appendValues( tmp[0] );
+                    setParam.appendValues( tmp[1] );
+                    setParam.appendValues( tmp[2] );
+                    setParam.closeParam ();
+                }
+
+                break;
+            }
+        case cgfxAttrDef::kAttrTypeBool:
+        case cgfxAttrDef::kAttrTypeInt:
+        case cgfxAttrDef::kAttrTypeFloat:
+        case cgfxAttrDef::kAttrTypeString:
+        case cgfxAttrDef::kAttrTypeVector2:
+        case cgfxAttrDef::kAttrTypeVector3:
+        case cgfxAttrDef::kAttrTypeVector4:
+
+        case cgfxAttrDef::kAttrTypeObjectDir:
+        case cgfxAttrDef::kAttrTypeViewDir:
+        case cgfxAttrDef::kAttrTypeProjectionDir:
+        case cgfxAttrDef::kAttrTypeScreenDir:
+        case cgfxAttrDef::kAttrTypeObjectPos:
+        case cgfxAttrDef::kAttrTypeViewPos:
+        case cgfxAttrDef::kAttrTypeProjectionPos:
+        case cgfxAttrDef::kAttrTypeScreenPos:
+
+        case cgfxAttrDef::kAttrTypeWorldDir:
+        case cgfxAttrDef::kAttrTypeWorldPos:
+        case cgfxAttrDef::kAttrTypeMatrix:
+            {
+                MObject oAttr = fnNode.attribute( attribute->fName, &status );
+                M_CHECK( status );
+                MPlug plug( oNode, oAttr );
+
+                switch( attribute->fType )
+                {
+                case cgfxAttrDef::kAttrTypeBool:
+                    {
+                        bool tmp;
+
+                        status = plug.getValue(tmp);
+                        M_CHECK( status );
+
+                        COLLADASW::SetParamBool setParam ( streamWriter );
+                        setParam.openParam ( attributeName );
+                        setParam.appendValues ( tmp );
+                        setParam.closeParam ();
+
+                        break;
+                    }
+                case cgfxAttrDef::kAttrTypeInt:
+                    {
+                        int tmp;
+
+                        status = plug.getValue(tmp);
+                        M_CHECK( status );
+
+                        COLLADASW::SetParamInt setParam ( streamWriter );
+                        setParam.openParam ( attributeName );
+                        setParam.appendValues ( tmp );
+                        setParam.closeParam ();
+
+                        break;
+                    }
+                case cgfxAttrDef::kAttrTypeFloat:
+                    {
+                        float tmp;
+
+                        status = plug.getValue(tmp);
+                        M_CHECK( status );
+
+                        COLLADASW::SetParamFloat setParam ( streamWriter );
+                        setParam.openParam ( attributeName );
+                        setParam.appendValues ( tmp );
+                        setParam.closeParam ();
+
+                        break;
+                    }
+                case cgfxAttrDef::kAttrTypeString:
+                    {
+                        MString tmp;
+                        
+                        status = plug.getValue(tmp);
+                        M_CHECK( status );
+                        
+                        COLLADASW::SetParamString setParam ( streamWriter );
+                        setParam.openParam ( attributeName );
+                        setParam.appendValues ( tmp.asChar() );
+                        setParam.closeParam ();
+                        
+                        break;
+                    }
+                case cgfxAttrDef::kAttrTypeVector2:
+                    {
+                        float tmp[2];
+                        
+                        MObject oData;
+                        status = plug.getValue(oData);
+                        M_CHECK( status );
+                        
+                        MFnNumericData fnData(oData, &status);
+                        M_CHECK( status );
+                        
+                        status = fnData.getData2Float( tmp[0], tmp[1] );
+                        M_CHECK( status );
+
+                        COLLADASW::SetParamFloat2 setParam ( streamWriter );
+                        setParam.openParam ( attributeName );
+                        setParam.appendValues( tmp[0] );
+                        setParam.appendValues( tmp[1] );
+                        setParam.closeParam ();
+
+                        break;
+                    }
+
+                case cgfxAttrDef::kAttrTypeVector3:
+                    {
+                        float tmp[3];
+
+                        MObject oData;
+                        status = plug.getValue(oData);
+                        M_CHECK( status );
+                        
+                        MFnNumericData fnData(oData, &status);
+                        M_CHECK( status );
+                        
+                        status = fnData.getData3Float( tmp[0], tmp[1], tmp[2] );
+                        M_CHECK( status );
+
+                        COLLADASW::SetParamFloat3 setParam ( streamWriter );
+                        setParam.openParam ( attributeName );
+                        setParam.appendValues( tmp[0] );
+                        setParam.appendValues( tmp[1] );
+                        setParam.appendValues( tmp[2] );
+                        setParam.closeParam ();
+
+                        break;
+                    }
+
+                case cgfxAttrDef::kAttrTypeVector4:
+                    {
+                        float tmp[4];
+
+                        MObject oData;
+                        status = plug.getValue(oData);
+                        M_CHECK( status );
+                        
+                        MFnNumericData fnData(oData, &status);
+                        M_CHECK( status );
+                        
+                        status = fnData.getData3Float( tmp[0], tmp[1], tmp[2] );
+                        M_CHECK( status );
+
+                        MObject oAttr = fnNode.attribute( attribute->fName + "W", &status );
+                        M_CHECK( status );
+                        MPlug plug( oNode, oAttr );
+                        status = plug.getValue( tmp[3] );
+                        M_CHECK( status );
+
+                        COLLADASW::SetParamFloat4 setParam ( streamWriter );
+                        setParam.openParam ( attributeName );
+                        setParam.appendValues( tmp[0] );
+                        setParam.appendValues( tmp[1] );
+                        setParam.appendValues( tmp[2] );
+                        setParam.appendValues( tmp[3] );
+                        setParam.closeParam ();
+
+                        break;
+                    }
+
+
+                case cgfxAttrDef::kAttrTypeObjectDir:
+                case cgfxAttrDef::kAttrTypeViewDir:
+                case cgfxAttrDef::kAttrTypeProjectionDir:
+                case cgfxAttrDef::kAttrTypeScreenDir:
+                case cgfxAttrDef::kAttrTypeObjectPos:
+                case cgfxAttrDef::kAttrTypeViewPos:
+                case cgfxAttrDef::kAttrTypeProjectionPos:
+                case cgfxAttrDef::kAttrTypeScreenPos:
+                    {
+                    }
+                    //falldown
+                case cgfxAttrDef::kAttrTypeWorldDir:
+                case cgfxAttrDef::kAttrTypeWorldPos:
+                    {
+                        double tmp[4];
+
+                        MObject oData;
+                        status = plug.getValue(oData);
+                        M_CHECK( status );
+                        
+                        MFnNumericData fnData(oData, &status);
+                        M_CHECK( status );
+
+
+                        MFnNumericData::Type type = fnData.numericType();
+
+                        if ( attribute->fSize == 3 ){
+                            float fTmp[3];
+                            status = fnData.getData3Float( fTmp[0], fTmp[1], fTmp[2] );
+                            tmp[0] = fTmp[0];
+                            tmp[1] = fTmp[1];
+                            tmp[2] = fTmp[2];
+                            tmp[3] = 1.0;
+                        }else{
+                            status = fnData.getData4Double( tmp[0], tmp[1], tmp[2], tmp[3] );
+                        }
+                        M_CHECK( status );
+
+                        // Find the coordinate space, and whether it is a point or a vector
+                        int base = cgfxAttrDef::kAttrTypeFirstPos;
+                        if (attribute->fType <= cgfxAttrDef::kAttrTypeLastDir) 
+                            base = cgfxAttrDef::kAttrTypeFirstDir;
+                        int space = attribute->fType - base;
+
+                        // Compute the transform matrix
+                        MMatrix mat;
+                        switch (space)
+                        {
+                            /* case 0:  object space, handled in view dependent method */
+                        case 1: /* world space  - do nothing, identity */ break;
+                            /* case 2: eye space, unsupported yet */
+                            /* case 3: clip space, unsupported yet */
+                            /* case 4: screen space, unsupported yet */
+                        }
+
+                        if ( base == cgfxAttrDef::kAttrTypeFirstPos )
+                        {
+                            MPoint point(tmp[0], tmp[1], tmp[2], tmp[3]);
+                            point *= mat;
+                            tmp[0] = point.x;
+                            tmp[1] = point.y;
+                            tmp[2] = point.z;
+                            tmp[3] = point.w;
+                        }
+                        else
+                        {
+                            MVector vec(tmp[0], tmp[1], tmp[2]);
+                            vec *= mat;
+                            tmp[0] = vec.x;
+                            tmp[1] = vec.y;
+                            tmp[2] = vec.z;
+                            tmp[3] = 1;
+                        }
+                
+                        COLLADASW::SetParamFloat4 setParam ( streamWriter );
+                        setParam.openParam ( attributeName );
+                        setParam.appendValues( tmp[0], tmp[1], tmp[2], tmp[3] );
+                        setParam.closeParam();
+
+                        break;
+                    }
+
+                case cgfxAttrDef::kAttrTypeMatrix:
+                    {
+                        MMatrix mayaMatrix;
+                        double* p = &mayaMatrix.matrix[0][0];
+
+
+                        MObject oData;
+                        status = plug.getValue(oData);
+                        M_CHECK( status );
+
+                        MFnMatrixData fnData(oData, &status);
+                        M_CHECK( status );
+
+                        mayaMatrix = fnData.matrix( &status );
+                        M_CHECK( status );
+
+                        if (attribute->fInvertMatrix)
+                            mayaMatrix = mayaMatrix.inverse();
+
+                        if (!attribute->fTransposeMatrix)
+                            mayaMatrix = mayaMatrix.transpose();
+
+                        double matrix[4][4];
+                        convertMayaMatrixToTransposedDouble4x4 ( matrix, mayaMatrix, getTolerance () );
+                        
+                        COLLADASW::SetParamFloat4x4 setParam ( streamWriter );
+                        setParam.openParam ( attributeName );
+                        setParam.appendValues( matrix );
+                        setParam.closeParam();
+
+                        break;
+                    }
+                default:
+                    M_CHECK ( 0 );
+                    break;
+                }
+
+                break;
+            }
+        case cgfxAttrDef::kAttrTypeColor1DTexture:
+        case cgfxAttrDef::kAttrTypeColor2DTexture:
+        case cgfxAttrDef::kAttrTypeColor3DTexture:
+        case cgfxAttrDef::kAttrTypeColor2DRectTexture:
+        case cgfxAttrDef::kAttrTypeNormalTexture:
+        case cgfxAttrDef::kAttrTypeBumpTexture:
+        case cgfxAttrDef::kAttrTypeCubeTexture:
+        case cgfxAttrDef::kAttrTypeEnvTexture:
+        case cgfxAttrDef::kAttrTypeNormalizationTexture:
+            {
+                CGparameter cgParameter = attribute->fParameterHandle;
+                HwShaderExporter hwShaderExporter ( mDocumentExporter );
+                hwShaderExporter.setShaderFxFileUri ( getShaderFxFileUri () );
+
+                MObject shaderNode = shaderNodeCgfx->thisMObject();
+                hwShaderExporter.exportSampler ( shaderNode, cgParameter, false );
+/*
+                MString texFileName;
+                MObject textureNode = MObject::kNullObj;
+
+                if( shaderNodeCgfx->fTexturesByName )
+                {
+                    attribute->getValue(oNode, texFileName);
+                }
+                else
+                {
+                    // If we have a fileTexture node connect, get the
+                    // filename it is using
+                    MPlug srcPlug;
+                    attribute->getSource(oNode, srcPlug);
+                    MObject srcNode = srcPlug.node();
+                    if( srcNode != MObject::kNullObj)
+                    {
+                        MStatus rc;
+                        MFnDependencyNode dgFn(srcNode);
+                        MPlug filenamePlug = dgFn.findPlug( "fileTextureName", &rc);
+                        if( rc == MStatus::kSuccess)
+                        {
+                            filenamePlug.getValue( texFileName);
+                            textureNode = filenamePlug.node(&rc);
+                        }
+
+                        // attach a monitor to this texture if we don't already have one
+                        // Note that we don't need to worry about handling node destroyed
+                        // or disconnected, as both of these will trigger attribute changed
+                        // messages before going away, and we will deregister our callback
+                        // in the handler!
+                        if( attribute->fTextureMonitor == kNullCallback && textureNode != MObject::kNullObj)
+                        {
+                            // If we don't have a callback, this may mean our texture is dirty
+                            // and needs to be re-loaded (because we can't actually delete the
+                            // texture itself in the DG callback we need to wait until we
+                            // know we have a GL context - like right here)
+                            attribute->releaseTexture();
+                            attribute->fTextureMonitor =
+                                   MNodeMessage::addAttributeChangedCallback(textureNode, textureChangedCallback, attribute);
+                        }
+                    }
+                }
+
+                if (attribute->fTexture.isNull() || texFileName != attribute->fStringDef)
+                {
+                       attribute->fStringDef = texFileName;
+                       attribute->fTexture = cgfxTextureCache::instance().getTexture(
+                           texFileName, textureNode, fShaderFxFile,
+                           attribute->fName, attribute->fType);
+
+                       if (!attribute->fTexture->isValid() && texFileName.length() > 0) {
+                           MFnDependencyNode fnNode( oNode );
+                           MString sMsg = "cgfxShader ";
+                           sMsg += fnNode.name();
+                           sMsg += " : failed to load texture \"";
+                            sMsg += texFileName;
+                           sMsg += "\".";
+                           MGlobal::displayWarning( sMsg );
+                       }
+                }
+
+                checkGlErrors("After loading texture");
+                cgGLSetupSampler(attribute->fParameterHandle, attribute->fTexture->getTextureId());
+*/
+                break;
+            }
+#ifdef _WIN32
+        case cgfxAttrDef::kAttrTypeTime:
+            {
+                /*
+                int ival = timeGetTime() & 0xffffff;
+                float val = (float)ival * 0.001f;
+                */
+                break;
+            }
+#endif//_WIN32
+        case cgfxAttrDef::kAttrTypeOther:
+        case cgfxAttrDef::kAttrTypeUnknown:
+            {
+                break;
+            }
+/*
+        case cgfxAttrDef::kAttrTypeObjectDir:
+        case cgfxAttrDef::kAttrTypeViewDir:
+        case cgfxAttrDef::kAttrTypeProjectionDir:
+        case cgfxAttrDef::kAttrTypeScreenDir:
+            {
+                break;
+            }
+        case cgfxAttrDef::kAttrTypeObjectPos:
+        case cgfxAttrDef::kAttrTypeViewPos:
+        case cgfxAttrDef::kAttrTypeProjectionPos:
+        case cgfxAttrDef::kAttrTypeScreenPos:
+            {
+                break;
+            }
+*/
+        case cgfxAttrDef::kAttrTypeWorldMatrix:
+        case cgfxAttrDef::kAttrTypeViewMatrix:
+        case cgfxAttrDef::kAttrTypeProjectionMatrix:
+        case cgfxAttrDef::kAttrTypeWorldViewMatrix:
+        case cgfxAttrDef::kAttrTypeWorldViewProjectionMatrix:
+            {
+                //omit.
+
+                MMatrix mayaMatrix;
+
+                mayaMatrix.setToIdentity();
+
+                COLLADASW::SetParamFloat4x4 setParam ( streamWriter );
+                setParam.openParam ( attributeName );
+
+                double matrix[4][4];
+                convertMayaMatrixToTransposedDouble4x4 ( matrix, mayaMatrix, getTolerance () );
+                setParam.appendValues( matrix );
+                setParam.closeParam();
+
+                break;
+            }
+        default:
+            M_CHECK( 0 );
+            break;
+        }                          // switch (attribute->fType)
+#else//AD_IGNORE_MODIFY
         switch ( attributeType )
         {
         case cgfxAttrDef::kAttrTypeBool:
@@ -586,6 +1082,7 @@ namespace COLLADAMaya
 //                }
             }
         }
+#endif//AD_IGNORE_MODIFY
     }
 
     //---------------------------------------
