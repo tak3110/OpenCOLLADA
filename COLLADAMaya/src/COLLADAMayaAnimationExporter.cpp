@@ -1075,7 +1075,11 @@ namespace COLLADAMaya
             source.setArrayId ( sourceId + OUTPUT_SOURCE_ID_SUFFIX + ARRAY_ID_SUFFIX );
             source.setAccessorStride ( dimension );
 
-            if ( dimension != 16 && dimension != 32 )
+            if ( dimension == 1 && parameters->empty() ){
+                source.setParameterTypeName ( &COLLADASW::CSWC::CSW_VALUE_TYPE_FLOAT );
+                source.getParameterNameList().push_back ( "PARAM" );
+            }
+            else if ( dimension != 16 && dimension != 32 )
             {
                 // It's a float source.
                 source.setParameterTypeName ( &COLLADASW::CSWC::CSW_VALUE_TYPE_FLOAT );
@@ -1306,13 +1310,13 @@ namespace COLLADAMaya
         // Get the collada id.
         if ( node.hasFn ( MFn::kTransform ) )
         {
-            // Check if there is an extra attribute "colladaId" and use this as export id.
-            String nodeId;
-            MString attributeValue;
-            DagHelper::getPlugValue ( node, COLLADA_ID_ATTRIBUTE_NAME, attributeValue );
-            if ( attributeValue != EMPTY_CSTRING )
-                nodeId = mDocumentExporter->mayaNameToColladaName ( attributeValue, false );
-            else nodeId = mDocumentExporter->mayaNameToColladaName ( fnDagNode.name ().asChar () );
+            MDagPath dagPath;
+            fnDagNode.getPath( dagPath );
+            // The maya node id.
+            String mayaNodeId = mDocumentExporter->dagPathToColladaId ( dagPath );
+            
+            VisualSceneExporter* visualSceneExporter = mDocumentExporter->getVisualSceneExporter();
+            String nodeId = visualSceneExporter->findColladaNodeId( mayaNodeId );
             return nodeId;
         }
         // TODO Do we need it?
@@ -2020,10 +2024,10 @@ namespace COLLADAMaya
         // for Bezier curves are used to store the control points.
         // 
         // In COLLADA, a geometry vector for BÈzier segment[i] is defined by:
-        // ï P0 is POSITION[i]
-        // ï C0 is OUT_TANGENT[i]
-        // ï C1 is IN_TANGENT[i+1]
-        // ï P1 is POSITION[i+1]
+        // ÅEP0 is POSITION[i]
+        // ÅEC0 is OUT_TANGENT[i]
+        // ÅEC1 is IN_TANGENT[i+1]
+        // ÅEP1 is POSITION[i+1]
         // 
         // A cubic BÈzier spline equation is given by:
         // B(s) = P0*(1-s)^3 + 3*C0*s*(1-s)^2 + 3*C1*s^2*(1-s) + P1*s^3
