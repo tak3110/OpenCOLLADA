@@ -257,7 +257,10 @@ namespace COLLADAMaya
 
 //                 // TODO Export the user defined material extra data from import (extra preservation).
 //                 mDocumentExporter->exportExtraData ( shader, COLLADAFW::ExtraKeys::MATERIAL );
-
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_MATERIAL_EXT_ATTR
+                mDocumentExporter->exportExtraData ( shader );
+#endif//AD_IGNORE_MODIFY
                 // Closes the current effect tag
                 closeMaterial();
 
