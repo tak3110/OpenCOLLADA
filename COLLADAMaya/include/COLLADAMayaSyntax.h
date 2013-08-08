@@ -63,8 +63,19 @@ namespace COLLADAMaya
     // Mel-Scripts
     // Name of a MEL script that will be used to display the contents of the
     // options dialog during file open and save
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_MAYA_2014
+#if MAYA_API_VERSION < 201400
+    static char*  MEL_EXPORT_OPTS                                   = "openColladaExporterOpts";
+    static char*  MEL_IMPORT_OPTS                                   = "openColladaImporterOpts";
+#else// MAYA_API_VERSION < 201400
     static const char*  MEL_EXPORT_OPTS                                   = "openColladaExporterOpts";
     static const char*  MEL_IMPORT_OPTS                                   = "openColladaImporterOpts";
+#endif// MAYA_API_VERSION < 201400
+#else//AD_IGNORE_MODIFY
+    static const char*  MEL_EXPORT_OPTS                                   = "openColladaExporterOpts";
+    static const char*  MEL_IMPORT_OPTS                                   = "openColladaImporterOpts";
+#endif//#ifndef AD_IGNORE_MODIFY
 
     // COLLADA 1.4 Maya-specific definitions
     static const char* MAYA_TEXTURE_NODETYPE                        = "dgnode_type";
