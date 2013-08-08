@@ -641,6 +641,15 @@ namespace COLLADAMaya
 
             // Export the original maya name.
             mVisualSceneNode->addExtraTechniqueParameter ( PROFILE_MAYA, PARAMETER_MAYA_ID, nodeName );
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_ORIGINAL_NODE_NAME
+            // <extra>
+            const MObject elementNode = ((SceneElement*)sceneElement)->getNode ();
+            mDocumentExporter->exportExtraData(
+                elementNode,
+                mVisualSceneNode
+                );
+#endif//AD_IGNORE_MODIFY
         }
 
         // TODO Export the imported extra tags, if there exist some.
