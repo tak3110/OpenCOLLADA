@@ -154,6 +154,13 @@ namespace COLLADAMaya
     static const String ANGLE_PARAMETER[1]                          = { "ANGLE" };
     static const String MATRIX_PARAMETER[1]                         = { "MATRIX" };
     static const String TRANSFORM_PARAMETER[1]                      = { "TRANSFORM" };
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_COLOR_PARAMETER
+//memo. see collada document.
+    static const String A_PARAMETER[1]                              = { "A" };
+    static const String RGB_PARAMETERS[3]                           = { "R", "G", "B" };
+    static const String ST_PARAMETERS[2]                            = { "S", "T" };
+#endif//AD_IGNORE_MODIFY
 
     static const String VERTEX_SID                                  = "VERTEX";
     static const String SKEW_XY_SID                                 = "skewXY";
