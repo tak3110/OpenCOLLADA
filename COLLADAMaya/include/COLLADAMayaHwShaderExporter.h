@@ -29,6 +29,13 @@
 
 #include <maya/MFnDependencyNode.h>
 
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_MAYA_2012
+#if MAYA_API_VERSION >= 201200
+class cgfxTechnique;
+#endif//
+#endif//AD_IGNORE_MODIFY
+
 namespace COLLADAMaya
 {
 
@@ -82,6 +89,17 @@ namespace COLLADAMaya
         /** Exports the effect data of a cgfxShader node. */
         void exportCgfxShader ( cgfxShaderNode* shaderNodeCgfx );
 
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_MAYA_2012
+#if MAYA_API_VERSION >= 201200
+        /** Export the effects parameter. */
+        void exportEffectParameters ( 
+            const String &effectId, 
+            MObject shaderNode, 
+            const cgfxRCPtr<const cgfxEffect>& cgEffect
+            );
+#endif// MAYA_API_VERSION >= 201200
+#endif// AD_IGNORE_MODIFY
         /** Export the effects parameter. */
         void exportEffectParameters ( 
             MObject shaderNode, 
@@ -122,6 +140,13 @@ namespace COLLADAMaya
 
         /** Exports the semantic data of the given parameter. */
         void exportSemantic( const CGparameter &cgParameter, COLLADASW::ParamBase *param );
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_MAYA_2012
+#if MAYA_API_VERSION >= 201200
+        /** Write the current technique and all sub-elements into the current collada document. */
+        void exportTechnique( const cgfxTechnique* technique );
+#endif//MAYA_API_VERSION >= 201200
+#endif//AD_IGNORE_MODIFY
 
         /** Write the current technique and all sub-elements into the current collada document. */
         void exportTechnique ( const CGtechnique &cgTechnique );

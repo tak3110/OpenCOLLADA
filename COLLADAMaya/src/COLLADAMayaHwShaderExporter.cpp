@@ -128,8 +128,162 @@ namespace COLLADAMaya
         }
         mEffectProfile->closeProfile ();
 #endif
+#if MAYA_API_VERSION >= 201200
+//AD_CGFX_MAYA_2012
+        // Set the current shader scope to CG
+        setShaderScope ( COLLADASW::Shader::SCOPE_CG );
+
+        // Writes the current effect profile into the collada document
+        mEffectProfile->setProfileType ( COLLADASW::EffectProfile::CG );
+        mEffectProfile->openProfile ();
+
+        // Get a pointer to the current stream writer
+        COLLADASW::StreamWriter* streamWriter = mDocumentExporter->getStreamWriter();
+
+        // Get the filename of the current cgfx file
+        MString shaderFxFile = cgfxFindFile(shaderNodeCgfx->shaderFxFile());
+        String shaderFxFileName = shaderFxFile.asChar (); // check3d.cgfx
+        COLLADASW::URI  shaderFxFileUri ( COLLADASW::URI::nativePathToUri ( shaderFxFileName ) );
+        setShaderFxFileUri ( shaderFxFileUri );
+
+        // Get the current CGeffect
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_MAYA_2012
+        const cgfxRCPtr<const cgfxEffect>& cgEffect = shaderNodeCgfx->effect();
+        if( cgEffect.isNull() )
+        {
+            MGlobal::displayError ("cgEffect is null.");
+            throw "cgEffect is null.";
+            return;
+        }
+#else//AD_IGNORE_MODIFY
+        CGeffect cgEffect = shaderNodeCgfx->effect();
+#endif//AD_IGNORE_MODIFY
+        // Set the current include file
+
+
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_RELATIVE_PATH
+        if ( ExportOptions::exportCgfxFileReferences () )
+        {
+            if ( shaderFxFileUri.getScheme ().empty () )
+                shaderFxFileUri.setScheme ( COLLADASW::URI::SCHEME_FILE );
+
+
+            if ( ExportOptions::relativePaths() )
+            {
+                // Get the URI of the COLLADA file.
+                String targetColladaFile = mDocumentExporter->getFilename();
+                COLLADASW::URI targetColladaUri ( COLLADASW::URI::nativePathToUri ( targetColladaFile ) );
+                if ( targetColladaUri.getScheme ().empty () )
+                    targetColladaUri.setScheme ( COLLADASW::URI::SCHEME_FILE );
+
+
+                // Get the texture URI relative to the COLLADA file URI.
+                bool success = false;
+                COLLADASW::URI targetUri = shaderFxFileUri.getRelativeTo( targetColladaUri, success );
+                if ( !success ) 
+                {
+                    String message = "Not able to generate a relative path from " 
+                        + shaderFxFileUri.getURIString() + " to " + targetColladaUri.getURIString() 
+                        + ". An absolute path will be written! ";
+                    MGlobal::displayError ( message.c_str() );
+                    targetUri = shaderFxFileUri;
+                }
+
+                mEffectProfile->setInclude ( targetUri, shaderFxFileUri.getPathFileBase() );
+            }
+            else
+            {
+                mEffectProfile->setInclude ( shaderFxFileUri, shaderFxFileUri.getPathFileBase() );
+            }
+        }
+#else//AD_IGNORE_MODIFY
+        if ( ExportOptions::exportCgfxFileReferences () )
+            mEffectProfile->setInclude ( shaderFxFileUri, shaderFxFileUri.getPathFileBase() );
+#endif//AD_IGNORE_MODIFY
+        else
+        {
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_SOURCE
+            String sourceString = "dummy.";
+            // Get the code sid
+            String codeSid = shaderFxFileUri.getPathFileBase ();
+            // Set the code into the collada effect profile
+            mEffectProfile->setCode ( sourceString, codeSid );
+#else//AD_IGNORE_MODIFY
+            // Add the source code
+            CGcontext cgContext = cgGetEffectContext ( cgEffect );
+            CGprogram cgProgram = cgGetFirstProgram ( cgContext );
+            const char* programSourceCG = cgGetProgramString ( cgProgram, CG_PROGRAM_SOURCE );
+            String sourceString = getProgramSourceString ( programSourceCG );
+            // Get the code sid
+            String codeSid = shaderFxFileUri.getPathFileBase ();
+            // Set the code into the collada effect profile
+            mEffectProfile->setCode ( sourceString, codeSid );
+#endif//AD_IGNORE_MODIFY
+        }
+
+        // Add the source code and the include file
+        mEffectProfile->addProfileElements ();
+
+        // Export the effects parameter
+        MObject shaderNode = shaderNodeCgfx->thisMObject();
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_ANIMATION
+        exportEffectParameters ( effectId, shaderNode, cgEffect );
+#else//AD_IGNORE_MODIFY
+        exportEffectParameters ( shaderNode, cgEffect );
+#endif//AD_IGNORE_MODIFY
+
+        // Find if effect parameter is used by any program of the selected technique
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_MAYA_2012
+        const cgfxTechnique* technique = cgEffect->getFirstTechnique();
+        while( technique )
+        {
+            exportTechnique ( technique );
+            technique = technique->getNext();
+        }
+#else//AD_IGNORE_MODIFY
+        CGtechnique cgTechnique = cgGetFirstTechnique ( cgEffect );
+        while ( cgTechnique )
+        {
+            exportTechnique ( cgTechnique );
+            cgTechnique = cgGetNextTechnique ( cgTechnique );
+        }
+        mEffectProfile->closeProfile ();
+#endif//AD_IGNORE_MODIFY
+
+#endif//MAYA_API_VERSION >= 201200
     }
 
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_MAYA_2012
+#if MAYA_API_VERSION >= 201200
+    void HwShaderExporter::exportTechnique (
+        const cgfxTechnique* technique
+        )
+    {
+        mEffectProfile->setTechniqueSid ( technique->getName().asChar() );
+        String techniqueName = technique->getName().asChar();
+        // Open the current technique element
+        mEffectProfile->openTechnique ( techniqueName );
+
+        // Go through the passes and write it into the collada file.
+        const cgfxPass* pass = technique->getFirstPass();
+        while ( pass )
+        {
+            CGpass cgPass = pass->getCgPass();
+            exportPass ( cgPass );
+            pass = pass->getNext();
+        }
+
+        // Close the current technique element
+        mEffectProfile->closeTechnique ();
+    }
+#endif//MAYA_API_VERSION >= 201200
+#endif//AD_IGNORE_MODIFY
     // --------------------------------
     void HwShaderExporter::exportTechnique (
         const CGtechnique& cgTechnique )
@@ -461,6 +615,388 @@ namespace COLLADAMaya
     }
 
     // --------------------------------------
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_MAYA_2012
+#if MAYA_API_VERSION >= 201200
+    void HwShaderExporter::exportEffectParameters ( 
+        const String &effectId, 
+        MObject shaderNode, 
+        const cgfxRCPtr<const cgfxEffect>& cgEffect
+        )
+    {
+        COLLADASW::StreamWriter* streamWriter = mDocumentExporter->getStreamWriter();
+
+        cgfxRCPtr<cgfxAttrDefList> effectAttributes = cgEffect->attrsFromEffect();
+//      MString sResult, sTemp;
+        cgfxAttrDefList::iterator effectIt;
+        for ( effectIt=effectAttributes->begin(); effectIt; ++effectIt )
+        {
+            cgfxAttrDef* effectAttribute = *effectIt;
+
+            CGparameter cgParameter = effectAttribute->fParameterHandle;
+
+            const char* paramName = cgGetParameterName ( cgParameter );
+            CGresource resource = cgGetParameterBaseResource ( cgParameter );
+            CGtype paramBaseType = cgGetParameterBaseType ( cgParameter );
+            CGtype paramType = cgGetParameterType ( cgParameter );
+
+#ifndef AD_IGNORE_MODIFY
+//AD_OMIT_EXPORT_INFO2
+            if( ExportOptions::isOmitShaderParams( paramName ) )
+                continue;
+#endif//AD_IGNORE_MODIFY
+
+/*
+#ifndef AD_IGNORE_MODIFY
+//for debug.
+            const char* semanticName = cgGetParameterSemantic( cgParameter );
+#endif//AD_IGNORE_MODIFY
+*/
+
+            /* TYPE is int, float, or double or a sampler. */
+            switch ( paramBaseType )
+            {
+            case CG_BOOL:
+            {
+                // Create the parameter
+                COLLADASW::NewParam<> newParam ( streamWriter );
+
+                // Set the collada value type
+                switch ( paramType )
+                {
+                case CG_BOOL: // The bool type represents Boolean values. Objects of bool type are either true or false.
+                case CG_BOOL1: // Single-element, packed, bool array (vector type).
+                    newParam.setParamType ( COLLADASW::ValueType::BOOL ); break;
+                case CG_BOOL2: // Two-element, packed, bool array (vector type).
+                    newParam.setParamType ( COLLADASW::ValueType::BOOL2 ); break;
+                case CG_BOOL3: // Three-element, packed, bool array (vector type).
+                    newParam.setParamType ( COLLADASW::ValueType::BOOL3 ); break;
+                case CG_BOOL4: // Four-element, packed, bool array (vector type).
+                    newParam.setParamType ( COLLADASW::ValueType::BOOL4 ); break;
+                default:
+                    {
+                        MGlobal::displayWarning ( "Parameter type not supported! " + paramType );
+                        newParam.setParamType ( COLLADASW::ValueType::VALUE_TYPE_UNSPECIFIED ); break;
+                    }
+                }
+
+                // Get the values
+                int numOfValues = 0;
+                CGenum valueType = CG_DEFAULT; // CG_CONSTANT
+                const double* paramValues = cgGetParameterValues ( cgParameter, valueType, &numOfValues );
+
+                // Export the parameter data.
+                exportParam ( cgParameter, &newParam, paramValues, numOfValues );
+
+                break;
+            }
+            case CG_INT:
+            {
+                // Create the parameter
+                COLLADASW::NewParam<> newParam ( streamWriter );
+
+                // Set the collada value type
+                switch ( paramType )
+                {
+                case CG_INT:
+                case CG_INT1:
+                    newParam.setParamType ( COLLADASW::ValueType::INT ); break;
+                case CG_INT2:
+                    newParam.setParamType ( COLLADASW::ValueType::INT2 ); break;
+                case CG_INT3:
+                    newParam.setParamType ( COLLADASW::ValueType::INT3 ); break;
+                case CG_INT4:
+                    newParam.setParamType ( COLLADASW::ValueType::INT4 ); break;
+                default:
+                    {
+                        MGlobal::displayWarning ( "Parameter type not supported! " + paramType );
+                        newParam.setParamType ( COLLADASW::ValueType::VALUE_TYPE_UNSPECIFIED ); break;
+                    }
+                }
+
+//                 // Determine the number of values.
+//                 int nrows = cgGetParameterRows ( cgParameter );
+//                 int ncols = cgGetParameterColumns ( cgParameter );
+//                 int asize = cgGetArrayTotalSize ( cgParameter );
+//                 int numOfValues = nrows*ncols;
+//
+//                 if (asize > 0) numOfValues *= asize;
+// 
+//                 // Get the values
+//                 int* paramValues = 0;
+//                 cgGetParameterValueir ( cgParameter, numOfValues, paramValues );
+
+                // Get the values
+                int numOfValues = 0;
+                CGenum valueType = CG_DEFAULT; // CG_CONSTANT
+                const double* paramValues = cgGetParameterValues ( cgParameter, valueType, &numOfValues );
+
+                // Export the parameter data.
+                exportParam ( cgParameter, &newParam, paramValues, numOfValues );
+
+                break;
+            }
+            case CG_FLOAT:
+            {
+                // Create the parameter
+                COLLADASW::NewParam<> newParam ( streamWriter );
+
+                // Set the collada value type
+                switch ( paramType )
+                {
+                case CG_FLOAT:
+                case CG_HALF:
+                    newParam.setParamType ( COLLADASW::ValueType::FLOAT ); break;
+                case CG_FLOAT2:
+                case CG_HALF2:
+                    newParam.setParamType ( COLLADASW::ValueType::FLOAT2 ); break;
+                case CG_FLOAT3:
+                case CG_HALF3:
+                    newParam.setParamType ( COLLADASW::ValueType::FLOAT3 ); break;
+                case CG_FLOAT4:
+                case CG_HALF4:
+                    newParam.setParamType ( COLLADASW::ValueType::FLOAT4 ); break;
+                case CG_FLOAT3x3:
+                case CG_HALF3x3:
+                    newParam.setParamType ( COLLADASW::ValueType::FLOAT3x3 ); break;
+                case CG_FLOAT4x4:
+                case CG_HALF4x4:
+                    newParam.setParamType ( COLLADASW::ValueType::FLOAT4x4 ); break;
+                case CG_ARRAY:
+                case CG_STRUCT:
+                default:
+                    {
+                        MGlobal::displayWarning ( "Parameter type not supported! " + paramType );
+                        newParam.setParamType ( COLLADASW::ValueType::VALUE_TYPE_UNSPECIFIED ); break;
+                    }
+                }
+
+                // Get the values
+                int numOfValues = 0;
+                CGenum valueType = CG_DEFAULT; // CG_CONSTANT
+                const double* paramValues = cgGetParameterValues( cgParameter, valueType, &numOfValues );
+
+                // Export the parameter data.
+                exportParam ( cgParameter, &newParam, paramValues, numOfValues );
+
+#ifndef AD_IGNORE_MODIFY
+                {
+                    // Get the animation exporter
+                    AnimationExporter* animationExporter = mDocumentExporter->getAnimationExporter();
+
+                    // Get the animation target path
+//                  String targetPath = effectId + "/" + this->mEffectProfile->getTechniqueSid() + "/";
+                    String targetPath = effectId + "/";
+
+                    // The target id for the animation
+                    String targetSid;
+                    
+                    // Check, if the parameter is animated and export the out color.
+                    targetSid = targetPath + paramName;
+
+                    switch ( paramType )
+                    {
+                    case CG_FLOAT:
+                    case CG_HALF:
+                        {
+                            bool animated = animationExporter->addNodeAnimation(
+                                shaderNode,
+                                targetSid,
+                                paramName,  //attribute name,
+                                kSingle
+                                );
+                            //int nextTextureIndex = 0;
+                            //exportTexturedParameter ( effectId, effectProfile, shader, ATTR_OUT_COLOR, EffectExporter::EMISSION, nextTextureIndex, animated );
+                            break;
+                        }
+                    case CG_FLOAT2:
+                    case CG_HALF2:
+                        {
+                            bool animated = animationExporter->addNodeAnimation(
+                                shaderNode,
+                                targetSid,
+                                paramName,  //attribute name.
+                                kVector2,
+                                XY_PARAMETERS
+                                );
+                            break;
+                        }
+                    case CG_FLOAT3:
+                    case CG_HALF3:
+                        {
+                            bool bColor = false;
+
+                            //Check whether the color parameters.
+                            {
+                                MString sUIName;
+                                CGannotation cgAnnotation = cgGetFirstParameterAnnotation(cgParameter);
+                                while (cgAnnotation)
+                                {
+                                    const char* annotationName = cgGetAnnotationName(cgAnnotation);
+                                    const char* annotationValue = cgGetStringAnnotationValue(cgAnnotation);
+                                    CGtype cgAnnotationType = cgGetAnnotationType(cgAnnotation);
+
+                                    if ( 0==stricmp( annotationName, "type" ) )
+                                    {
+                                        sUIName = MString(annotationValue);
+                                        if( 0==stricmp("color", sUIName.asChar() ) ){
+                                            bColor=true;
+                                        }
+                                    }
+                                    cgAnnotation = cgGetNextAnnotation(cgAnnotation);
+                                }
+                            }
+
+
+                            if( bColor )
+                            {
+                                bool animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,
+                                    paramName,  //attribute name.
+                                    kVector,
+                                    RGB_PARAMETERS
+                                    );
+                            }
+                            else
+                            {
+                                bool animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,
+                                    paramName,  //attribute name.
+                                    kVector,
+                                    XYZ_PARAMETERS
+                                    );
+                            }
+
+                            break;
+                        }
+                    case CG_FLOAT4:
+                    case CG_HALF4:
+                        {
+                            bool bColor = false;
+
+                            //Check whether the color parameters.
+                            {
+                                MString sUIName;
+                                CGannotation cgAnnotation = cgGetFirstParameterAnnotation(cgParameter);
+                                while (cgAnnotation)
+                                {
+                                    const char* annotationName = cgGetAnnotationName(cgAnnotation);
+                                    const char* annotationValue = cgGetStringAnnotationValue(cgAnnotation);
+                                    CGtype cgAnnotationType = cgGetAnnotationType(cgAnnotation);
+
+                                    if ( 0==stricmp( annotationName, "type" ) )
+                                    {
+                                        sUIName = MString(annotationValue);
+                                        if( 0==stricmp("color", sUIName.asChar() ) ){
+                                            bColor=true;
+                                        }
+                                    }
+                                    cgAnnotation = cgGetNextAnnotation(cgAnnotation);
+                                }
+                            }
+
+                            if( bColor )
+                            {
+                                bool animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,
+                                    paramName,
+                                    kVector,
+                                    RGBA_PARAMETERS
+                                    );
+                                animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,  
+                                    String(paramName) + String("Alpha"),
+                                    kSingle,
+                                    A_PARAMETER
+                                    );
+                            }else{
+                                bool animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,
+                                    paramName,
+                                    kVector,
+                                    XYZW_PARAMETERS
+                                    );
+                            }
+
+                            break;
+                        }
+                    case CG_FLOAT3x3:
+                    case CG_HALF3x3:
+                        {
+                            bool animated = animationExporter->addNodeAnimation(
+                                shaderNode,
+                                targetSid,
+                                paramName,
+                                kMatrix
+                                );
+                            break;
+                        }
+                    case CG_FLOAT4x4:
+                    case CG_HALF4x4:
+                        {
+                            bool animated = animationExporter->addNodeAnimation(
+                                shaderNode,
+                                targetSid,
+                                paramName,
+                                kMatrix
+                                );
+                            break;
+                        }
+                    default:
+                        {
+                            MGlobal::displayWarning ( "Parameter type not supported! " + paramType );
+                            break;
+                        }
+                    }
+                }
+#endif//AD_IGNORE_MODIFY
+
+                break;
+            }
+            case CG_STRING:
+                {
+                    // Create the parameter
+                    COLLADASW::NewParam<> newParam ( streamWriter );
+
+                    // Get the value
+                    const char* paramValue = cgGetStringParameterValue ( cgParameter ); 
+                    String paramString = (String) paramValue;
+
+                    // Export the parameter data.
+                    exportParam ( cgParameter, &newParam, paramString );
+
+                    break;
+                }
+            case CG_TEXTURE:
+                {
+                    // Nothing to do. Will be done with the sampler.
+                    break;
+                }
+            case CG_SAMPLER1D:
+            case CG_SAMPLER2D:
+            case CG_SAMPLER3D:
+            case CG_SAMPLERCUBE:
+            case CG_SAMPLERRECT:
+                {
+                    // Create the sampler and add it into the collada document
+                    exportSampler ( shaderNode, cgParameter, true );
+                    break;
+                }
+            default:
+                MGlobal::displayWarning ( "Parameter type not supported! " + paramType );
+                break;
+           }
+
+
+        }
+    }
+#endif//MAYA_API_VERSION >= 201200
+#endif//AD_IGNORE_MODIFY
     void HwShaderExporter::exportEffectParameters ( 
         MObject shaderNode, 
         const CGeffect& cgEffect )
