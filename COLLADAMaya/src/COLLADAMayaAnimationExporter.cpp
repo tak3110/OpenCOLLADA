@@ -1519,7 +1519,25 @@ namespace COLLADAMaya
         AnimationResult aresult = AnimationHelper::isAnimated ( animCache, plug );
         if ( aresult == kISANIM_None && !animatedMatrix ) return false;
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_ANIMATION_FORCE_EXPORT_STATIC_CURVE
+        bool bIsSampling  = ExportOptions::isSampling();
+        bool bSimpleAnime = false;
+        if( AnimationHelper::isSimpleInterpolationType( plug, COLLADASW::LibraryAnimations::LINEAR ) ||
+            AnimationHelper::isSimpleInterpolationType( plug, COLLADASW::LibraryAnimations::STEP   )
+            )
+        {
+            bSimpleAnime = true;
+        }
+
+        if ( ( !bIsSampling || bSimpleAnime ) &&
+             ( aresult == kISANIM_Curve || aresult == kISANIM_Character )
+             )
+            //@memo tasaitoh not sampling case.
+
+#else//AD_IGNORE_MODIFY
         if ( !ExportOptions::isSampling() && ( aresult == kISANIM_Curve || aresult == kISANIM_Character ) )
+#endif//AD_IGNORE_MODIFY
         {
             // Create a AnimationCurve for the corresponding Maya animation curve node
             if ( aresult == kISANIM_Curve )
