@@ -91,6 +91,11 @@ namespace COLLADAMaya
         /** The current transform matrix. */
         MTransformationMatrix mTransformMatrix;
 
+#ifndef AD_IGNORE_MODIFY
+//AD_NODE_VISIBILITY
+        /** The current visibility object. */
+        MObject mVisibilityObject;
+#endif//AD_IGNORE_MODIFY
     public:
 
         /**

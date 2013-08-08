@@ -408,6 +408,22 @@ namespace COLLADAMaya
                 MGlobal::displayError( message );
                 return false;
             }
+#ifndef AD_IGNORE_MODIFY
+//AD_NODE_VISIBILITY
+            {
+                // Get the dagPath from the scene element
+                MDagPath dagPath = sceneElement->getPath();
+                mDagPath = dagPath;
+
+                MStatus status;
+                mVisibilityObject = dagPath.transform ( &status );
+                if ( !status )
+                {
+                    status.perror ( "MFnDagNode constructor" );
+                    return false;
+                }
+            }
+#endif//AD_IGNORE_MODIFY
         }
 
         // Prepares the visual scene node
@@ -1074,7 +1090,29 @@ namespace COLLADAMaya
     void VisualSceneExporter::exportVisibility ( COLLADASW::Node* sceneNode )
     {
         bool isVisible;
+#ifndef AD_IGNORE_MODIFY
+//AD_NODE_VISIBILITY
+        if ( mVisibilityObject != MObject::kNullObj )
+        {
+            // Get the visibility value, if it exist
+            if ( DagHelper::getPlugValue ( mVisibilityObject, ATTR_VISIBILITY, isVisible ) )
+            {
+                AnimationSampleCache* animationCache = mDocumentExporter->getAnimationCache();
+                AnimationResult animationResult;
+                animationResult = AnimationHelper::isAnimated( animationCache, mVisibilityObject, ATTR_VISIBILITY );
+                
+                // Write out the visibility of this node, if it is not visible or if it is animated.
+                if ( !isVisible || animationResult != kISANIM_None )
+                {
+                    // Add an <extra> node with a visibility parameters that the animation can target
+                    sceneNode->addExtraTechniqueParameter ( PROFILE_MAYA, ATTR_VISIBILITY, isVisible );
 
+                    AnimationExporter* animationExporter = mDocumentExporter->getAnimationExporter();
+                    animationExporter->addNodeAnimation ( mVisibilityObject, ATTR_VISIBILITY, kBoolean );
+                }
+            }
+        }
+#else//AD_IGNORE_MODIFY
         if ( mTransformObject != MObject::kNullObj )
         {
             // Get the visibility value, if it exist
@@ -1095,6 +1133,7 @@ namespace COLLADAMaya
                 }
             }
         }
+#endif//AD_IGNORE_MODIFY
     }
 
     //---------------------------------------------------------------
