@@ -27,6 +27,10 @@
 #include <maya/MItMeshVertex.h>
 #include <maya/MItDag.h>
 
+#ifndef AD_IGNORE_MODIFY
+//AD_CHECK_TRIANGULATTION
+#include <maya/MUintArray.h>
+#endif//AD_IGNORE_MODIFY
 #include "COLLADASWSource.h"
 #include "COLLADASWBaseInputElement.h"
 #include "COLLADASWInputList.h"
@@ -81,10 +85,44 @@ namespace COLLADAMaya
         {
             triangulated = true;
 
+#ifndef AD_IGNORE_MODIFY
+//AD_CHECK_TRIANGULATTION
+// Trianglate が正常に機能しなかったときに警告をだす. 
+            MUintArray errorIndex;
+            for (MItMeshPolygon polyIt(fnMesh.object()); !polyIt.isDone(); polyIt.next())
+            {
+                bool poly_triangulated = polyIt.hasValidTriangulation();
+                triangulated = triangulated && poly_triangulated;
+                if( !poly_triangulated )
+                {
+                    unsigned int index = polyIt.index();
+                    errorIndex.append( index );
+                    MString indexstr;
+                    indexstr += index;
+                    MGlobal::displayWarning( MString("face ") + fnMesh.name() + ".f[" + indexstr + "] can't triangulate." );
+                }
+            }
+            // 三角化できないポリゴンを選択するスクリプトを吐く
+            if( errorIndex.length() > 0 )
+            {
+                MGlobal::displayWarning( MString("try following script.") );
+
+                MString strScript( "select -r" );
+                unsigned int uSize = errorIndex.length();
+                for( unsigned int i = 0; i < uSize; ++i )
+                {
+                    MString indexstr;
+                    indexstr += errorIndex[i];
+                    strScript += " " + fnMesh.name() + ".f[" + indexstr + "]";
+                }
+                MGlobal::displayWarning( strScript );
+        }
+#else//AD_IGNORE_MODIFY
             for ( MItMeshPolygon polyIt ( fnMesh.object() ); triangulated && !polyIt.isDone(); polyIt.next() )
             {
                 triangulated = polyIt.hasValidTriangulation();
             }
+#endif//AD_IGNORE_MODIFY
         }
 
         // If we have a hole in a polygon, we can't write a <polylist>.
