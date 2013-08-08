@@ -80,12 +80,27 @@ namespace COLLADAMaya
         const COLLADASW::URI& getShaderFxFileUri () const;
 
         /** Exports the effect data of a cgfxShader node. */
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_ANIMATION
+        void exportCgfxShader ( const String &effectId, cgfxShaderNode* shaderNodeCgfx );
+#else//AD_IGNORE_MODIFY
         void exportCgfxShader ( cgfxShaderNode* shaderNodeCgfx );
+#endif//AD_IGNORE_MODIFY
 
         /** Export the effects parameter. */
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_ANIMATION
+        void exportEffectParameters ( 
+            const String &effectId, 
+            MObject shaderNode, 
+            const CGeffect &cgEffect
+            );
+#else//AD_IGNORE_MODIFY
         void exportEffectParameters ( 
             MObject shaderNode, 
             const CGeffect &cgEffect );
+#endif//AD_IGNORE_MODIFY
+
 
         /** Create the annotation data of the given parameter and push it in the list. */
         void getAnnotations ( 

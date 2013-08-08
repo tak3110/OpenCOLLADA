@@ -29,6 +29,10 @@
 
 #include "cgfxShaderNode.h"
 #include "cgfxFindImage.h"
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_ANIMATION
+#include "COLLADAMayaAnimationExporter.h"
+#endif//AD_IGNORE_MODIFY
 
 #include <assert.h>
 
@@ -59,9 +63,14 @@ namespace COLLADAMaya
         {
             // Create a cgfx shader node
             cgfxShaderNode* shaderNodeCgfx = ( cgfxShaderNode* ) fnNode.userNode();
-
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_ANIMATION
+            // Exports the effect data of a cgfxShader node.
+            exportCgfxShader( effectId, shaderNodeCgfx );
+#else//AD_IGNORE_MODIFY
             // Exports the effect data of a cgfxShader node.
             exportCgfxShader( shaderNodeCgfx );
+#endif//AD_IGNORE_MODIFY
         }
         else
         {
@@ -73,7 +82,12 @@ namespace COLLADAMaya
     }
 
     // ---------------------------------
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_ANIMATION
+    void HwShaderExporter::exportCgfxShader ( const String &effectId, cgfxShaderNode* shaderNodeCgfx )
+#else//AD_IGNORE_MODIFY
     void HwShaderExporter::exportCgfxShader ( cgfxShaderNode* shaderNodeCgfx )
+#endif//AD_IGNORE_MODIFY
     {
 		// Disabled for Maya2012, the raw CGeffect is no-longer directly accessible from the cgfxShaderNode class.
 #if MAYA_API_VERSION < 201200
@@ -117,7 +131,12 @@ namespace COLLADAMaya
 
         // Export the effects parameter
         MObject shaderNode = shaderNodeCgfx->thisMObject();
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_ANIMATION
+        exportEffectParameters ( effectId, shaderNode, cgEffect );
+#else//AD_IGNORE_MODIFY
         exportEffectParameters ( shaderNode, cgEffect );
+#endif//AD_IGNORE_MODIFY
 
         // Find if effect parameter is used by any program of the selected technique
         CGtechnique cgTechnique = cgGetFirstTechnique ( cgEffect );
@@ -461,9 +480,18 @@ namespace COLLADAMaya
     }
 
     // --------------------------------------
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGFX_ADD_ANIMATION
+    void HwShaderExporter::exportEffectParameters ( 
+        const String &effectId, 
+        MObject shaderNode, 
+        const CGeffect &cgEffect
+        )
+#else//AD_IGNORE_MODIFY
     void HwShaderExporter::exportEffectParameters ( 
         MObject shaderNode, 
         const CGeffect& cgEffect )
+#endif//AD_IGNORE_MODIFY
     {
         COLLADASW::StreamWriter* streamWriter = mDocumentExporter->getStreamWriter();
 
@@ -601,7 +629,181 @@ namespace COLLADAMaya
 
                 // Export the parameter data.
                 exportParam ( cgParameter, &newParam, paramValues, numOfValues );
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_CGGX_ADD_ANIMATION
+                {
+                    // Get the animation exporter
+                    AnimationExporter* animationExporter = mDocumentExporter->getAnimationExporter();
 
+                    // Get the animation target path
+//                  String targetPath = effectId + "/" + this->mEffectProfile->getTechniqueSid() + "/";
+                    String targetPath = effectId + "/";
+                    // The target id for the animation
+                    String targetSid;
+                    
+                    // Check, if the parameter is animated and export the out color.
+                    targetSid = targetPath + paramName;
+
+                    switch ( paramType )
+                    {
+                    case CG_FLOAT:
+                    case CG_HALF:
+                        {
+                            bool animated = animationExporter->addNodeAnimation(
+                                shaderNode,
+                                targetSid,
+                                paramName,
+                                kSingle
+                                );
+                            break;
+                        }
+                    case CG_FLOAT2:
+                    case CG_HALF2:
+                        {
+                            bool animated = animationExporter->addNodeAnimation(
+                                shaderNode,
+                                targetSid,
+                                paramName,
+                                kVector2,
+                                XY_PARAMETERS
+                                );
+                            break;
+                        }
+                    case CG_FLOAT3:
+                    case CG_HALF3:
+                        {
+                            bool bColor = false;
+
+                            //Check whether the color parameters.
+                            {
+                                MString sUIName;
+                                CGannotation cgAnnotation = cgGetFirstParameterAnnotation(cgParameter);
+                                while (cgAnnotation)
+                                {
+                                    const char* annotationName = cgGetAnnotationName(cgAnnotation);
+                                    const char* annotationValue = cgGetStringAnnotationValue(cgAnnotation);
+                                    CGtype cgAnnotationType = cgGetAnnotationType(cgAnnotation);
+
+                                    if ( 0==stricmp( annotationName, "type" ) )
+                                    {
+                                        sUIName = MString(annotationValue);
+                                        if( 0==stricmp("color", sUIName.asChar() ) ){
+                                            bColor=true;
+                                        }
+                                    }
+                                    cgAnnotation = cgGetNextAnnotation(cgAnnotation);
+                                }
+                            }
+
+                            if( bColor )
+                            {
+                                bool animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,
+                                    paramName,
+                                    kVector,
+                                    RGB_PARAMETERS
+                                    );
+
+                            }
+                            else
+                            {
+                                bool animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,
+                                    paramName,
+                                    kVector,
+                                    XYZ_PARAMETERS
+                                    );
+                            }
+                            break;
+                        }
+                    case CG_FLOAT4:
+                    case CG_HALF4:
+                        {
+                            bool bColor = false;
+
+                            //Check whether the color parameters.
+                            {
+                                MString sUIName;
+                                CGannotation cgAnnotation = cgGetFirstParameterAnnotation(cgParameter);
+                                while (cgAnnotation)
+                                {
+                                    const char* annotationName = cgGetAnnotationName(cgAnnotation);
+                                    const char* annotationValue = cgGetStringAnnotationValue(cgAnnotation);
+                                    CGtype cgAnnotationType = cgGetAnnotationType(cgAnnotation);
+
+                                    if ( 0==stricmp( annotationName, "type" ) )
+                                    {
+                                        sUIName = MString(annotationValue);
+                                        if( 0==stricmp("color", sUIName.asChar() ) ){
+                                            bColor=true;
+                                        }
+                                    }
+                                    cgAnnotation = cgGetNextAnnotation(cgAnnotation);
+                                }
+                            }
+
+                            if( bColor )
+                            {
+                                bool animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,
+                                    paramName,
+                                    kVector,
+                                    RGBA_PARAMETERS
+                                    );
+                                animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,  
+                                    String(paramName) + String("Alpha"),
+                                    kSingle,
+                                    A_PARAMETER
+                                    );
+                            }
+                            else
+                            {
+                                bool animated = animationExporter->addNodeAnimation(
+                                    shaderNode,
+                                    targetSid,
+                                    paramName,
+                                    kVector,
+                                    XYZW_PARAMETERS
+                                    );
+                            }
+
+                            break;
+                        }
+                    case CG_FLOAT3x3:
+                    case CG_HALF3x3:
+                        {
+                            bool animated = animationExporter->addNodeAnimation(
+                                shaderNode,
+                                targetSid,
+                                paramName,
+                                kMatrix
+                                );
+                            break;
+                        }
+                    case CG_FLOAT4x4:
+                    case CG_HALF4x4:
+                        {
+                            bool animated = animationExporter->addNodeAnimation(
+                                shaderNode,
+                                targetSid,
+                                paramName,
+                                kMatrix
+                                );
+                            break;
+                        }
+                    default:
+                        {
+                            MGlobal::displayWarning ( "Parameter type not supported! " + paramType );
+                            break;
+                        }
+                    }
+                }
+#endif//AD_IGNORE_MODIFY
                 break;
             }
             case CG_STRING:
