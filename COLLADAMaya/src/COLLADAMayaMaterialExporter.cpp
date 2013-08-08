@@ -288,7 +288,16 @@ namespace COLLADAMaya
             {
                 COLLADASW::SetParamBool setParam ( streamWriter );
                 setParam.openParam ( attributeName );
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_NULL_CRASH
+                if( NULL!=attribute->fNumericDef ){
+                    setParam.appendValues( attribute->fNumericDef[0] );
+                }else{
+                    setParam.appendValues( false );
+                }
+#else//AD_IGNORE_MODIFY
                 setParam.appendValues ( attribute->fNumericDef && attribute->fNumericDef[0] );
+#endif//AD_IGNORE_MODIFY
                 setParam.closeParam ();
                 break;
             }
@@ -296,7 +305,16 @@ namespace COLLADAMaya
             {
                 COLLADASW::SetParamInt setParam ( streamWriter );
                 setParam.openParam ( attributeName );
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_NULL_CRASH
+                if( NULL!=attribute->fNumericDef ){
+                    setParam.appendValues ( static_cast<int>(attribute->fNumericDef[0]) );
+                }else{
+                    setParam.appendValues ( static_cast<int>(0) );
+                }
+#else//AD_IGNORE_MODIFY
                 setParam.appendValues ( (int) attribute->fNumericDef[0] );
+#endif//AD_IGNORE_MODIFY
                 setParam.closeParam();
                 break;
             }
@@ -313,8 +331,18 @@ namespace COLLADAMaya
             {
                 COLLADASW::SetParamFloat setParam ( streamWriter );
                 setParam.openParam ( attributeName );
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_NULL_CRASH
+                if ( attribute->fNumericDef!=NULL )
+                {
+                    setParam.appendValues ( attribute->fNumericDef[0] );
+                }else{
+                    setParam.appendValues ( 0.0 );
+                }
+#else//AD_IGNORE_MODIFY
                 if ( attribute->fNumericDef!=NULL /*&& attribute->fNumericDef[0]!=0*/ )  
                     setParam.appendValues ( attribute->fNumericDef[0] );
+#endif//AD_IGNORE_MODIFY
                 setParam.closeParam();
                 break;
             }
@@ -324,11 +352,21 @@ namespace COLLADAMaya
                 setParam.openParam ( attributeName );
                 for ( int i=0; i<attribute->fSize; ++i )
                 {
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_NULL_CRASH
+                    if ( attribute->fNumericDef!=NULL /*&& attribute->fNumericDef[i]!=0*/ )  
+                    {
+                        setParam.appendValues( attribute->fNumericDef[i] );
+                    }else{
+                        setParam.appendValues( 0.0 );
+                    }
+#else//AD_IGNORE_MODIFY
                     if ( attribute->fNumericDef!=NULL /*&& attribute->fNumericDef[i]!=0*/ )  
                     {
                         double val = attribute->fNumericDef[i];
                         setParam.appendValues( val );
                     }
+#endif//AD_IGNORE_MODIFY
                 }
                 setParam.closeParam();
                 break;
@@ -340,11 +378,21 @@ namespace COLLADAMaya
                 setParam.openParam ( attributeName );
                 for ( int i=0; i<attribute->fSize; ++i )
                 {
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_NULL_CRASH
+                    if ( attribute->fNumericDef!=NULL /*&& attribute->fNumericDef[i]!=0*/ )  
+                    {
+                        setParam.appendValues( attribute->fNumericDef[i] );
+                    }else{
+                        setParam.appendValues( 0.0 );
+                    }
+#else//AD_IGNORE_MODIFY
                     if ( attribute->fNumericDef!=NULL /*&& attribute->fNumericDef[i]!=0*/ )  
                     {
                         double val = attribute->fNumericDef[i];
                         setParam.appendValues( val );
                     }
+#endif//AD_IGNORE_MODIFY
                 }
                 setParam.closeParam();
                 break;
@@ -356,11 +404,21 @@ namespace COLLADAMaya
                 setParam.openParam ( attributeName );
                 for ( int i=0; i<attribute->fSize; ++i )
                 {
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_NULL_CRASH
+                    if ( attribute->fNumericDef!=NULL /*&& attribute->fNumericDef[i]!=0*/ )  
+                    {
+                        setParam.appendValues( attribute->fNumericDef[i] );
+                    }else{
+                        setParam.appendValues( 0.0 );
+                    }
+#else//AD_IGNORE_MODIFY
                     if ( attribute->fNumericDef!=NULL /*&& attribute->fNumericDef[i]!=0*/ )  
                     {
                         double val = attribute->fNumericDef[i];
                         setParam.appendValues( val );
                     }
+#endif//AD_IGNORE_MODIFY
                 }
                 setParam.closeParam();
                 break;
@@ -370,11 +428,27 @@ namespace COLLADAMaya
             {
                 // Read the value
                 double tmp[4];
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_NULL_CRASH
+                if( attribute->fNumericDef ){
+                    for ( int i=0; i<attribute->fSize; ++i )
+                    {
+                        tmp[i] = attribute->fNumericDef[i];
+                    }
+                    if (attribute->fSize == 3) tmp[3] = 1.0;
+                }else{
+                    tmp[0] = 0.0f;
+                    tmp[1] = 0.0f;
+                    tmp[2] = 0.0f;
+                    tmp[3] = 1.0f;
+                }
+#else//AD_IGNORE_MODIFY
                 for ( int i=0; i<attribute->fSize; ++i )
                 {
                     tmp[i] = attribute->fNumericDef[i];
                 }
                 if (attribute->fSize == 3) tmp[3] = 1.0;
+#endif//AD_IGNORE_MODIFY
 
                 // Find the coordinate space, and whether it is a point or a vector
                 int base = cgfxAttrDef::kAttrTypeFirstPos;
@@ -430,10 +504,18 @@ namespace COLLADAMaya
 
                 MMatrix mayaMatrix;
                 double* p = &mayaMatrix.matrix[0][0];
+#ifndef AD_IGNORE_MODIFY
+//AD_CGFX_NULL_CRASH
+                p[ 0] = 1.0; p[ 1] = 0.0; p[ 2] = 0.0; p[ 3] = 0.0;
+                p[ 4] = 0.0; p[ 5] = 1.0; p[ 6] = 0.0; p[ 7] = 0.0;
+                p[ 8] = 0.0; p[ 9] = 0.0; p[10] = 1.0; p[11] = 0.0;
+                p[12] = 0.0; p[13] = 0.0; p[14] = 0.0; p[15] = 1.0;
+#else//AD_IGNORE_MODIFY
                 for ( int k=0; k<attribute->fSize; ++k )
                 {
                     p[k] = attribute->fNumericDef[k];
                 }
+#endif//AD_IGNORE_MODIFY
 
                 MMatrix wMatrix, vMatrix, pMatrix, sMatrix;
                 MMatrix wvMatrix, wvpMatrix, wvpsMatrix;
