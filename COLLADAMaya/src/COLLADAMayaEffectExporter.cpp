@@ -159,8 +159,14 @@ namespace COLLADAMaya
         MFnDependencyNode shaderNode ( shader, &status );
         if ( status != MStatus::kSuccess ) return;
 
+#ifndef AD_IGNORE_MODIFY
+//AD_MATERIAL_NAMESPACE_DEFECT
+        // Get the maya id of the current material
+        String mayaMaterialId = DocumentExporter::mayaNameToColladaName ( shaderNode.name(), false );
+#else//AD_IGNORE_MODIFY
         // Get the maya id of the current material
         String mayaMaterialId = DocumentExporter::mayaNameToColladaName ( shaderNode.name(), true );
+#endif//AD_IGNORE_MODIFY
 
         // Have we seen this shader before?
         MaterialMap::iterator materialMapIter;

@@ -203,9 +203,14 @@ namespace COLLADAMaya
         MStatus status;
         MFnDependencyNode shaderNode ( shader, &status );
         if ( status != MStatus::kSuccess ) return;
-
+#ifndef AD_IGNORE_MODIFY
+//AD_MATERIAL_NAMESPACE_DEFECT
+        // Get the name of the current material (this is the maya material id)
+        String mayaMaterialId = DocumentExporter::mayaNameToColladaName ( shaderNode.name(), false );
+#else//AD_IGNORE_MODIFY
         // Get the name of the current material (this is the maya material id)
         String mayaMaterialId = DocumentExporter::mayaNameToColladaName ( shaderNode.name(), true );
+#endif//AD_IGNORE_MODIFY
 
         // Have we seen this shader before, is it already exported?
         MaterialMap::iterator materialMapIter;
@@ -228,8 +233,14 @@ namespace COLLADAMaya
         }
         else
         {
+#ifndef AD_IGNORE_MODIFY
+//AD_MATERIAL_NAMESPACE_DEFECT
             // Generate a COLLADA id for the new object
             colladaMaterialId = DocumentExporter::mayaNameToColladaName ( shaderNode.name(), true );
+#else//AD_IGNORE_MODIFY
+            // Generate a COLLADA id for the new object
+            colladaMaterialId = DocumentExporter::mayaNameToColladaName ( shaderNode.name(), true );
+#endif//AD_IGNORE_MODIFY
         }
         // Make the id unique and store it.
         colladaMaterialId = mMaterialIdList.addId ( colladaMaterialId );

@@ -498,9 +498,14 @@ namespace COLLADAMaya
                 // our own function to write that material to our own data structure for later export.
                 MObject shader = DagHelper::getSourceNodeConnectedTo ( shadingEngine, ATTR_SURFACE_SHADER );
                 MFnDependencyNode shaderNode ( shader );
+#ifndef AD_INGORE_MODIFY
+//AD_MATERIAL_NAMESPACE_DEFECT
+                String mayaMaterialId = DocumentExporter::mayaNameToColladaName ( shaderNode.name(), false );
+                const String& colladaMaterialId = materialExporter->findColladaMaterialId ( mayaMaterialId );
+#else//AD_IGNORE_MODIFY
                 String mayaMaterialId = DocumentExporter::mayaNameToColladaName ( shaderNode.name(), true );
                 const String& colladaMaterialId = materialExporter->findColladaMaterialId ( mayaMaterialId );
-                
+#endif//AD_IGNORE_MODIFY
                 // Create the material instance object.
                 COLLADASW::InstanceMaterial materialInstance ( shadingEngineName, COLLADASW::URI ( EMPTY_STRING, colladaMaterialId ) );
 
