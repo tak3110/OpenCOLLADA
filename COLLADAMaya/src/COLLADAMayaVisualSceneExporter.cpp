@@ -94,6 +94,21 @@ namespace COLLADAMaya
             if ( exportVisualSceneNodes ( sceneElement ) ) nodeExported = true;
         }
 
+#ifndef AD_IGNORE_MODIFY
+//AD_EXPORT_TIME
+        // Write out the scene parameters
+        COLLADASW::StreamWriter* streamWriter = mDocumentExporter->getStreamWriter();
+        COLLADASW::Extra extraSource ( mSW );
+        extraSource.openExtra();
+        COLLADASW::Technique techniqueSource ( streamWriter );
+        techniqueSource.openTechnique ( PROFILE_MAYA );
+
+        techniqueSource.addParameter ( "start_time", (float) AnimationHelper::animationStartTime().as(MTime::kSeconds) );
+        techniqueSource.addParameter ( "end_time", (float) AnimationHelper::animationEndTime().as(MTime::kSeconds) );
+
+        techniqueSource.closeTechnique();
+        extraSource.closeExtra();
+#endif//AD_IGNORE_MODIFY
         // Just if a node was exported, the visual scene tag
         // in the collada document is open and should be closed.
         if ( nodeExported ) closeVisualScene();
